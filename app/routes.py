@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
 
 from . import printing, storage
 
@@ -41,3 +41,14 @@ def print_image_route():
         "success": True,
         "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)",
     })
+
+
+ALLOWED_FOLDERS = {"captures", "photos", "discards", "back-covers"}
+
+
+@bp.get("/files/<folder>/<filename>")
+def serve_file(folder, filename):
+    if folder not in ALLOWED_FOLDERS:
+        abort(404)
+    root = current_app.config["STORAGE_ROOT"]
+    return send_from_directory(root / folder, filename)

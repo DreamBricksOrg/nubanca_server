@@ -74,3 +74,19 @@ def test_post_print_rejects_missing_file(client):
 
     assert response.status_code == 400
     assert response.get_json()["success"] is False
+
+
+def test_serve_file_returns_file_from_allowed_folder(client, app):
+    photos = app.config["STORAGE_ROOT"] / "photos"
+    (photos / "20260921_143201.jpg").write_bytes(b"image-bytes")
+
+    response = client.get("/files/photos/20260921_143201.jpg")
+
+    assert response.status_code == 200
+    assert response.data == b"image-bytes"
+
+
+def test_serve_file_returns_404_for_disallowed_folder(client):
+    response = client.get("/files/secrets/anything.jpg")
+
+    assert response.status_code == 404
