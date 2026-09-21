@@ -47,13 +47,15 @@ def promote_latest_capture(captures_folder: Path, photos_folder: Path):
         return None
 
     latest = max(files, key=lambda p: p.stat().st_mtime)
-    for f in files:
-        if f != latest:
-            f.unlink()
 
     new_name = build_timestamped_filename(latest.suffix, photos_folder)
     dest = photos_folder / new_name
     shutil.move(str(latest), str(dest))
+
+    for f in files:
+        if f != latest:
+            f.unlink()
+
     return dest
 
 
