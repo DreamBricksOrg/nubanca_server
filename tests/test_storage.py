@@ -1,4 +1,7 @@
-from app.storage import ensure_folders, FOLDERS, is_allowed_extension, list_image_files
+import time
+from datetime import datetime
+
+from app.storage import ensure_folders, FOLDERS, is_allowed_extension, list_image_files, most_recent_file, build_timestamped_filename
 
 
 def test_ensure_folders_creates_all_expected_subfolders(tmp_path):
@@ -27,3 +30,34 @@ def test_list_image_files_only_returns_allowed_images(tmp_path):
     result = {p.name for p in list_image_files(tmp_path)}
 
     assert result == {"a.jpg", "b.png"}
+
+
+def test_most_recent_file_returns_none_when_folder_empty(tmp_path):
+    assert most_recent_file(tmp_path) is None
+
+
+def test_most_recent_file_returns_the_newest_by_mtime(tmp_path):
+    older = tmp_path / "older.jpg"
+    older.write_bytes(b"x")
+    time.sleep(0.01)
+    newer = tmp_path / "newer.jpg"
+    newer.write_bytes(b"x")
+
+    assert most_recent_file(tmp_path) == newer
+
+
+def test_build_timestamped_filename_uses_given_moment(tmp_path):
+    moment = datetime(2026, 9, 21, 14, 32, 1)
+
+    name = build_timestamped_filename(".jpg", tmp_path, moment=moment)
+
+    assert name == "20260921_143201.jpg"
+
+
+def test_build_timestamped_filename_avoids_collisions(tmp_path):
+    moment = datetime(2026, 9, 21, 14, 32, 1)
+    (tmp_path / "20260921_143201.jpg").write_bytes(b"x")
+
+    name = build_timestamped_filename(".jpg", tmp_path, moment=moment)
+
+    assert name == "20260921_143201_1.jpg"
