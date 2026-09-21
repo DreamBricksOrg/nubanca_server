@@ -35,6 +35,9 @@ def print_image_route():
         dest = storage.save_uploaded_image(file_storage, root / "back-covers")
     except ValueError as exc:
         return jsonify({"success": False, "message": str(exc)}), 400
+    # OSError from a full/unwritable disk is intentionally left uncaught for
+    # now (surfaces as a 500) — no printer hardware exists yet to exercise
+    # this path for real; revisit once /print sees production traffic.
 
     printing.print_image(dest)
     return jsonify({
@@ -43,12 +46,12 @@ def print_image_route():
     })
 
 
-ALLOWED_FOLDERS = {"captures", "photos", "discards", "back-covers"}
-
-
 @bp.get("/files/<folder>/<filename>")
 def serve_file(folder, filename):
-    if folder not in ALLOWED_FOLDERS:
+    # send_from_directory (werkzeug's safe_join) already rejects ".." traversal
+    # and path separators in `filename`, so no extra secure_filename() call is
+    # needed on top of this folder allowlist.
+    if folder not in storage.FOLDERS:
         abort(404)
     root = current_app.config["STORAGE_ROOT"]
     return send_from_directory(root / folder, filename)

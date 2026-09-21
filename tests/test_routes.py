@@ -76,6 +76,35 @@ def test_post_print_rejects_missing_file(client):
     assert response.get_json()["success"] is False
 
 
+def test_post_print_rejects_empty_filename(client):
+    data = {
+        "image": (io.BytesIO(b"x"), ""),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 400
+    assert response.get_json()["success"] is False
+
+
+def test_post_print_calls_print_image(client, app, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "app.routes.printing.print_image",
+        lambda path: calls.append(path) or {"printed": False, "message": "stub"},
+    )
+    data = {
+        "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
+    assert calls[0].parent == back_covers
+
+
 def test_serve_file_returns_file_from_allowed_folder(client, app):
     photos = app.config["STORAGE_ROOT"] / "photos"
     (photos / "20260921_143201.jpg").write_bytes(b"image-bytes")
