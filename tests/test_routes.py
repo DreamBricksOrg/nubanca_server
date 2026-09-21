@@ -14,6 +14,9 @@ def test_get_image_promotes_capture_and_returns_url(client, app):
     data = response.get_json()
     assert data["image_url"].startswith("http://testserver/files/photos/")
     assert data["image_url"].endswith(".jpg")
+    assert not (captures / "DSC0001.jpg").exists()
+    photos = app.config["STORAGE_ROOT"] / "photos"
+    assert len(list(photos.iterdir())) == 1
 
 
 def test_post_discard_returns_404_when_no_photo(client):
