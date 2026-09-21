@@ -1,3 +1,6 @@
+import io
+
+
 def test_get_image_returns_204_when_no_new_capture(client):
     response = client.get("/image")
 
@@ -39,3 +42,35 @@ def test_post_discard_moves_latest_photo(client, app):
     assert response.get_json() == {"success": True, "message": "Foto descartada"}
     discards = app.config["STORAGE_ROOT"] / "discards"
     assert (discards / "20260921_143201.jpg").exists()
+
+
+def test_post_print_saves_file_and_returns_success(client, app):
+    data = {
+        "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["success"] is True
+    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
+    assert len(list(back_covers.iterdir())) == 1
+
+
+def test_post_print_rejects_disallowed_extension(client):
+    data = {
+        "image": (io.BytesIO(b"x"), "final.gif"),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 400
+    assert response.get_json()["success"] is False
+
+
+def test_post_print_rejects_missing_file(client):
+    response = client.post("/print", data={}, content_type="multipart/form-data")
+
+    assert response.status_code == 400
+    assert response.get_json()["success"] is False
