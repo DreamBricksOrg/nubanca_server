@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
 
-from app.storage import ensure_folders, FOLDERS, is_allowed_extension, list_image_files, most_recent_file, build_timestamped_filename
+from app.storage import ensure_folders, FOLDERS, is_allowed_extension, list_image_files, most_recent_file, build_timestamped_filename, promote_latest_capture
 
 
 def test_ensure_folders_creates_all_expected_subfolders(tmp_path):
@@ -61,3 +61,43 @@ def test_build_timestamped_filename_avoids_collisions(tmp_path):
     name = build_timestamped_filename(".jpg", tmp_path, moment=moment)
 
     assert name == "20260921_143201_1.jpg"
+
+
+def test_promote_latest_capture_returns_none_when_captures_empty(tmp_path):
+    captures = tmp_path / "captures"
+    photos = tmp_path / "photos"
+    captures.mkdir()
+    photos.mkdir()
+
+    assert promote_latest_capture(captures, photos) is None
+
+
+def test_promote_latest_capture_moves_and_renames_single_file(tmp_path):
+    captures = tmp_path / "captures"
+    photos = tmp_path / "photos"
+    captures.mkdir()
+    photos.mkdir()
+    (captures / "DSC0001.jpg").write_bytes(b"x")
+
+    dest = promote_latest_capture(captures, photos)
+
+    assert dest.parent == photos
+    assert dest.exists()
+    assert not (captures / "DSC0001.jpg").exists()
+    assert list(captures.iterdir()) == []
+
+
+def test_promote_latest_capture_keeps_only_the_newest_and_deletes_others(tmp_path):
+    captures = tmp_path / "captures"
+    photos = tmp_path / "photos"
+    captures.mkdir()
+    photos.mkdir()
+    (captures / "older.jpg").write_bytes(b"x")
+    time.sleep(0.01)
+    (captures / "newer.jpg").write_bytes(b"x")
+
+    dest = promote_latest_capture(captures, photos)
+
+    assert dest.exists()
+    assert list(captures.iterdir()) == []
+    assert len(list(photos.iterdir())) == 1

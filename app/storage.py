@@ -1,3 +1,4 @@
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -38,3 +39,19 @@ def build_timestamped_filename(ext: str, dest_folder: Path, moment: datetime = N
         candidate = f"{base}_{counter}{ext}"
         counter += 1
     return candidate
+
+
+def promote_latest_capture(captures_folder: Path, photos_folder: Path):
+    files = list_image_files(captures_folder)
+    if not files:
+        return None
+
+    latest = max(files, key=lambda p: p.stat().st_mtime)
+    for f in files:
+        if f != latest:
+            f.unlink()
+
+    new_name = build_timestamped_filename(latest.suffix, photos_folder)
+    dest = photos_folder / new_name
+    shutil.move(str(latest), str(dest))
+    return dest
