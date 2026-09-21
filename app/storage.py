@@ -55,3 +55,13 @@ def promote_latest_capture(captures_folder: Path, photos_folder: Path):
     dest = photos_folder / new_name
     shutil.move(str(latest), str(dest))
     return dest
+
+
+def discard_latest_photo(photos_folder: Path, discards_folder: Path):
+    latest = most_recent_file(photos_folder)
+    if latest is None:
+        return None
+
+    dest = discards_folder / latest.name
+    shutil.move(str(latest), str(dest))
+    return dest

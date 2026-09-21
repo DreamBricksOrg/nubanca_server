@@ -101,3 +101,32 @@ def test_promote_latest_capture_keeps_only_the_newest_and_deletes_others(tmp_pat
     assert dest.exists()
     assert list(captures.iterdir()) == []
     assert len(list(photos.iterdir())) == 1
+
+
+from app.storage import discard_latest_photo
+
+
+def test_discard_latest_photo_returns_none_when_photos_empty(tmp_path):
+    photos = tmp_path / "photos"
+    discards = tmp_path / "discards"
+    photos.mkdir()
+    discards.mkdir()
+
+    assert discard_latest_photo(photos, discards) is None
+
+
+def test_discard_latest_photo_moves_newest_file_keeping_its_name(tmp_path):
+    photos = tmp_path / "photos"
+    discards = tmp_path / "discards"
+    photos.mkdir()
+    discards.mkdir()
+    (photos / "older.jpg").write_bytes(b"x")
+    time.sleep(0.01)
+    (photos / "20260921_143201.jpg").write_bytes(b"x")
+
+    dest = discard_latest_photo(photos, discards)
+
+    assert dest == discards / "20260921_143201.jpg"
+    assert dest.exists()
+    assert (photos / "older.jpg").exists()
+    assert not (photos / "20260921_143201.jpg").exists()
