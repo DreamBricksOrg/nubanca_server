@@ -103,7 +103,9 @@ def test_promote_latest_capture_keeps_only_the_newest_and_deletes_others(tmp_pat
     assert len(list(photos.iterdir())) == 1
 
 
-from app.storage import discard_latest_photo
+from app.storage import discard_latest_photo, save_uploaded_image
+import io
+from werkzeug.datastructures import FileStorage
 
 
 def test_discard_latest_photo_returns_none_when_photos_empty(tmp_path):
@@ -130,3 +132,38 @@ def test_discard_latest_photo_moves_newest_file_keeping_its_name(tmp_path):
     assert dest.exists()
     assert (photos / "older.jpg").exists()
     assert not (photos / "20260921_143201.jpg").exists()
+
+
+def test_save_uploaded_image_raises_for_missing_file(tmp_path):
+    dest_folder = tmp_path / "back-covers"
+    dest_folder.mkdir()
+
+    try:
+        save_uploaded_image(None, dest_folder)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_raises_for_disallowed_extension(tmp_path):
+    dest_folder = tmp_path / "back-covers"
+    dest_folder.mkdir()
+    upload = FileStorage(stream=io.BytesIO(b"x"), filename="final.gif")
+
+    try:
+        save_uploaded_image(upload, dest_folder)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_saves_with_timestamped_name(tmp_path):
+    dest_folder = tmp_path / "back-covers"
+    dest_folder.mkdir()
+    upload = FileStorage(stream=io.BytesIO(b"binary-image-data"), filename="final.jpg")
+
+    dest = save_uploaded_image(upload, dest_folder)
+
+    assert dest.parent == dest_folder
+    assert dest.exists()
+    assert dest.read_bytes() == b"binary-image-data"

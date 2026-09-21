@@ -65,3 +65,16 @@ def discard_latest_photo(photos_folder: Path, discards_folder: Path):
     dest = discards_folder / latest.name
     shutil.move(str(latest), str(dest))
     return dest
+
+
+def save_uploaded_image(file_storage, dest_folder: Path) -> Path:
+    if file_storage is None or not file_storage.filename:
+        raise ValueError("Nenhum arquivo enviado")
+    if not is_allowed_extension(file_storage.filename):
+        raise ValueError("Extensão de arquivo não permitida")
+
+    ext = Path(file_storage.filename).suffix.lower()
+    name = build_timestamped_filename(ext, dest_folder)
+    dest = dest_folder / name
+    file_storage.save(str(dest))
+    return dest
