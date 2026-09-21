@@ -119,3 +119,30 @@ def test_serve_file_returns_404_for_disallowed_folder(client):
     response = client.get("/files/secrets/anything.jpg")
 
     assert response.status_code == 404
+
+
+def test_full_capture_to_print_flow(client, app):
+    captures = app.config["STORAGE_ROOT"] / "captures"
+    (captures / "DSC0001.jpg").write_bytes(b"raw-capture-bytes")
+
+    image_response = client.get("/image")
+    assert image_response.status_code == 200
+    image_url = image_response.get_json()["image_url"]
+    served_path = image_url[len("http://testserver"):]
+
+    served_response = client.get(served_path)
+    assert served_response.status_code == 200
+    assert served_response.data == b"raw-capture-bytes"
+
+    print_response = client.post(
+        "/print",
+        data={"image": (io.BytesIO(b"treated-collage-bytes"), "collage.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert print_response.status_code == 200
+    assert print_response.get_json()["success"] is True
+
+    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
+    saved_files = list(back_covers.iterdir())
+    assert len(saved_files) == 1
+    assert saved_files[0].read_bytes() == b"treated-collage-bytes"
