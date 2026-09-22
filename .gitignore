@@ -3,3 +3,11 @@ __pycache__/
 *.pyc
 .env
 *.egg-info/
+storage/captures/*
+storage/photos/*
+storage/discards/*
+storage/back-covers/*
+!storage/captures/.gitkeep
+!storage/photos/.gitkeep
+!storage/discards/.gitkeep
+!storage/back-covers/.gitkeep
