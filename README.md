@@ -99,7 +99,7 @@ Recebe a imagem final tratada (colagem feita pelo tablet) como upload `multipart
 
 | Status | Corpo | Quando |
 |---|---|---|
-| `200` | `{"success": true, "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)"}` | Arquivo salvo com sucesso. |
+| `200` | `{"success": true, "message": "...", "page_url": "http://localhost:5000/view/20260922_143201.jpg"}` | Arquivo salvo com sucesso. `page_url` aponta para a página de visualização/compartilhamento (ver `GET /view/<filename>`). |
 | `400` | `{"success": false, "message": "..."}` | Nenhum arquivo enviado, ou extensão não permitida. |
 
 > **Nota:** o comando real de impressão via PowerShell ainda não foi implementado — depende da definição da impressora/driver A4. Ver `app/printing.py` para o stub e o comentário indicando o que substituir.
@@ -109,6 +109,17 @@ Exemplo com `curl`:
 ```bash
 curl -X POST http://localhost:5000/print -F "image=@collage.jpg"
 ```
+
+### `GET /view/<filename>`
+
+Página HTML (não JSON) para o cliente final ver a foto impressa no celular, com botões de **Compartilhar** (via `navigator.share` do navegador) e **Download**. `<filename>` é o nome do arquivo em `back-covers/` (normalmente obtido do `page_url` retornado por `POST /print`).
+
+Mostra uma splashscreen com a animação do logo (roxo/branco, seguindo o brand guideline da Nubank) enquanto a página e a foto carregam, evitando qualquer flash de conteúdo sem estilo.
+
+| Status | Quando |
+|---|---|
+| `200` | Retorna a página HTML. |
+| `404` | Não existe arquivo com esse nome em `back-covers/`. |
 
 ### `GET /files/<folder>/<filename>`
 
