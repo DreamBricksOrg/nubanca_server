@@ -28,6 +28,22 @@
     });
   }
 
+  // preload="auto" only buffers the file - it doesn't decode a frame, so
+  // the first play() on a video can still show a brief blank frame while
+  // the decoder spins up. Priming (play then immediately pause at time 0)
+  // forces that first-frame decode ahead of time, while videoIn is still
+  // playing, so videoLoop/videoOut already have a frame ready to paint
+  // the instant we switch to them.
+  function primeVideo(video) {
+    video.play().then(function () {
+      video.pause();
+      video.currentTime = 0;
+    }).catch(function () {});
+  }
+
+  primeVideo(videoLoop);
+  primeVideo(videoOut);
+
   function maybeReveal() {
     if (revealed || introPlaying || !photoSettled || !minTimeDone) {
       return;
