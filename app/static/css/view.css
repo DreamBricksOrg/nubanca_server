@@ -1,0 +1,136 @@
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Semibold.ttf") format("truetype");
+  font-weight: 600;
+}
+
+:root {
+  --purple: #8D0DE3;
+  --purple-100: #ECDFFF;
+  --sand: #F3EFE6;
+  --black: #000000;
+  --white: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--white);
+  font-family: "Nu Sans Text", sans-serif;
+  color: var(--black);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#splash {
+  position: fixed;
+  inset: 0;
+  background: var(--purple);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: opacity 0.4s ease;
+}
+
+#splash.splash-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#splash-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header {
+  width: 100%;
+  padding: 24px 0;
+  display: flex;
+  justify-content: center;
+  background: var(--white);
+}
+
+.logo {
+  height: 32px;
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 480px;
+  padding: 16px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.photo,
+#photo-error {
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.photo {
+  display: block;
+  object-fit: cover;
+}
+
+#photo-error {
+  padding: 48px 16px;
+  text-align: center;
+  background: var(--sand);
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border-radius: 999px;
+  text-align: center;
+  font-family: "Nu Sans Text", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--purple);
+  color: var(--white);
+}
+
+.btn-secondary {
+  background: var(--purple-100);
+  color: var(--purple);
+}

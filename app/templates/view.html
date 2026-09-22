@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sua foto</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/view.css') }}">
+</head>
+<body>
+  <div id="splash">
+    <video
+      id="splash-video"
+      data-in="{{ url_for('static', filename='video/splash_in.mp4') }}"
+      data-loop="{{ url_for('static', filename='video/splash_loop.mp4') }}"
+      data-out="{{ url_for('static', filename='video/splash_out.mp4') }}"
+      autoplay
+      muted
+      playsinline
+    ></video>
+  </div>
+
+  <div id="content" class="hidden">
+    <header class="header">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="nu" class="logo">
+    </header>
+
+    <main class="main">
+      <img id="photo" class="photo" src="{{ image_url }}" data-src="{{ image_url }}" alt="Sua foto">
+      <p id="photo-error" class="hidden">Não foi possível carregar a foto.</p>
+
+      <div class="actions">
+        <button id="share-btn" class="btn btn-primary" type="button">Compartilhar</button>
+        <a id="download-btn" class="btn btn-secondary" href="{{ image_url }}" download="{{ filename }}">Download</a>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/view.js') }}" defer></script>
+</body>
+</html>

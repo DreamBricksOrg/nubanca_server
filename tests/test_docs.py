@@ -12,4 +12,10 @@ def test_openapi_spec_lists_all_endpoints(client):
     spec = response.get_json()
     assert spec["info"]["title"] == "Photo Print API"
     paths = set(spec["paths"].keys())
-    assert paths == {"/image", "/discard", "/print", "/files/{folder}/{filename}"}
+    assert paths == {
+        "/image",
+        "/discard",
+        "/print",
+        "/view/{filename}",
+        "/files/{folder}/{filename}",
+    }

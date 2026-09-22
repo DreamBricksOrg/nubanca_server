@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
 
 from . import printing, storage
 
@@ -105,6 +105,9 @@ def print_image_route():
             message:
               type: string
               example: Imagem salva em back-covers; impressão ainda não implementada (stub)
+            page_url:
+              type: string
+              example: http://localhost:5000/view/20260922_143201.jpg
       400:
         description: No file sent, or its extension isn't allowed.
         schema:
@@ -129,10 +132,39 @@ def print_image_route():
     # this path for real; revisit once /print sees production traffic.
 
     printing.print_image(dest)
+    base_url = current_app.config["BASE_URL"].rstrip("/")
     return jsonify({
         "success": True,
         "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)",
+        "page_url": f"{base_url}/view/{dest.name}",
     })
+
+
+@bp.get("/view/<filename>")
+def view_photo(filename):
+    """Branded mobile page to view, share and download a printed photo.
+    ---
+    tags:
+      - print
+    parameters:
+      - name: filename
+        in: path
+        type: string
+        required: true
+    produces:
+      - text/html
+    responses:
+      200:
+        description: HTML page with the photo, a share button and a download button.
+      404:
+        description: The file doesn't exist in back-covers/.
+    """
+    root = current_app.config["STORAGE_ROOT"]
+    existing_names = {p.name for p in storage.list_image_files(root / "back-covers")}
+    if filename not in existing_names:
+        abort(404)
+    image_url = url_for("main.serve_file", folder="back-covers", filename=filename)
+    return render_template("view.html", filename=filename, image_url=image_url)
 
 
 @bp.get("/files/<folder>/<filename>")

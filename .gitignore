@@ -11,3 +11,7 @@ storage/back-covers/*
 !storage/photos/.gitkeep
 !storage/discards/.gitkeep
 !storage/back-covers/.gitkeep
+
+# Raw brand kit (fonts/videos/images) kept locally for reference only.
+# Only the curated subset copied into app/static/ is versioned.
+/static/

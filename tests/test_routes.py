@@ -59,7 +59,9 @@ def test_post_print_saves_file_and_returns_success(client, app):
     body = response.get_json()
     assert body["success"] is True
     back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    assert len(list(back_covers.iterdir())) == 1
+    saved = list(back_covers.iterdir())
+    assert len(saved) == 1
+    assert body["page_url"] == f"http://testserver/view/{saved[0].name}"
 
 
 def test_post_print_rejects_disallowed_extension(client):
@@ -150,3 +152,23 @@ def test_full_capture_to_print_flow(client, app):
     saved_files = list(back_covers.iterdir())
     assert len(saved_files) == 1
     assert saved_files[0].read_bytes() == b"treated-collage-bytes"
+
+
+def test_view_photo_renders_page_for_existing_back_cover(client, app):
+    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
+    (back_covers / "20260922_143201.jpg").write_bytes(b"final-bytes")
+
+    response = client.get("/view/20260922_143201.jpg")
+
+    assert response.status_code == 200
+    assert response.content_type.startswith("text/html")
+    body = response.get_data(as_text=True)
+    assert "/files/back-covers/20260922_143201.jpg" in body
+    assert "share-btn" in body
+    assert "download-btn" in body
+
+
+def test_view_photo_returns_404_for_unknown_file(client):
+    response = client.get("/view/does-not-exist.jpg")
+
+    assert response.status_code == 404
