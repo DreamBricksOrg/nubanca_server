@@ -65,9 +65,10 @@ body {
 
 .header {
   width: 100%;
-  padding: 24px 0;
+  max-width: 480px;
+  padding: 24px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   background: var(--white);
 }
 
