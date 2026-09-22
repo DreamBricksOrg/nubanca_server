@@ -43,7 +43,7 @@ nubanca-server/
 
 Faz o "poll" da pasta `captures/`:
 
-- Se `captures/` estiver vazia → `204 No Content` (sem corpo).
+- Se `captures/` estiver vazia → `404 {"success": false, "message": "Nenhuma imagem nova disponível"}`.
 - Se houver um ou mais arquivos: seleciona o **mais recente** por mtime, renomeia para timestamp (`YYYYMMDD_HHMMSS.<ext>`, com sufixo `_1`, `_2`... em caso de colisão) e move para `photos/`. Os demais arquivos encontrados em `captures/` (mais antigos) são **apagados**.
 - Retorna `200 {"image_url": "<BASE_URL>/files/photos/<nome>"}`.
 
@@ -79,7 +79,7 @@ Serve arquivos estáticos apenas das 4 pastas conhecidas (`captures`, `photos`, 
 ## Testes
 
 - `pytest` cobrindo:
-  - `/image`: pasta vazia → 204; um arquivo → move e renomeia, retorna URL; múltiplos arquivos → mantém só o mais recente em `photos/`, apaga os outros de `captures/`.
+  - `/image`: pasta vazia → 404; um arquivo → move e renomeia, retorna URL; múltiplos arquivos → mantém só o mais recente em `photos/`, apaga os outros de `captures/`.
   - `/discard`: `photos/` vazia → 404; com arquivo → move para `discards/`.
   - `/print`: upload válido → salva em `back-covers/`, chama stub de impressão, retorna sucesso; extensão inválida → 400.
   - `/files/<folder>/<filename>`: pasta fora da allowlist → 404.

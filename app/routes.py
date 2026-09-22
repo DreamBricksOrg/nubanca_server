@@ -20,13 +20,22 @@ def get_image():
             image_url:
               type: string
               example: http://localhost:5000/files/photos/20260921_143201.jpg
-      204:
+      404:
         description: No new capture is waiting in captures/.
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            message:
+              type: string
+              example: Nenhuma imagem nova disponível
     """
     root = current_app.config["STORAGE_ROOT"]
     dest = storage.promote_latest_capture(root / "captures", root / "photos")
     if dest is None:
-        return "", 204
+        return jsonify({"success": False, "message": "Nenhuma imagem nova disponível"}), 404
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
     image_url = f"{base_url}/files/photos/{dest.name}"

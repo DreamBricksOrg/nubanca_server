@@ -1,10 +1,14 @@
 import io
 
 
-def test_get_image_returns_204_when_no_new_capture(client):
+def test_get_image_returns_404_when_no_new_capture(client):
     response = client.get("/image")
 
-    assert response.status_code == 204
+    assert response.status_code == 404
+    assert response.get_json() == {
+        "success": False,
+        "message": "Nenhuma imagem nova disponível",
+    }
 
 
 def test_get_image_promotes_capture_and_returns_url(client, app):
