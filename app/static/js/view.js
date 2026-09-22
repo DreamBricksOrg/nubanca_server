@@ -2,7 +2,9 @@
   "use strict";
 
   var splash = document.getElementById("splash");
-  var video = document.getElementById("splash-video");
+  var videoIn = document.getElementById("video-in");
+  var videoLoop = document.getElementById("video-loop");
+  var videoOut = document.getElementById("video-out");
   var content = document.getElementById("content");
   var photo = document.getElementById("photo");
   var photoError = document.getElementById("photo-error");
@@ -16,15 +18,26 @@
   var minTimeDone = false;
   var revealed = false;
 
+  // All three videos are preloaded and stacked from page load; switching
+  // between them is just an opacity toggle (never touches `.src`), which
+  // avoids the reload/blank-frame flash a src swap on a single <video>
+  // element would cause.
+  function showVideo(video) {
+    [videoIn, videoLoop, videoOut].forEach(function (v) {
+      v.classList.toggle("active", v === video);
+    });
+  }
+
   function maybeReveal() {
     if (revealed || introPlaying || !photoSettled || !minTimeDone) {
       return;
     }
     revealed = true;
-    video.loop = false;
-    video.src = video.dataset.out;
-    video.onended = finishReveal;
-    video.play().catch(finishReveal);
+    videoLoop.pause();
+    showVideo(videoOut);
+    videoOut.currentTime = 0;
+    videoOut.onended = finishReveal;
+    videoOut.play().catch(finishReveal);
   }
 
   function finishReveal() {
@@ -39,15 +52,15 @@
     }
   }
 
-  video.addEventListener("ended", function onIntroEnded() {
+  videoIn.addEventListener("ended", function onIntroEnded() {
     if (!introPlaying) {
       return;
     }
     introPlaying = false;
-    video.removeEventListener("ended", onIntroEnded);
-    video.loop = true;
-    video.src = video.dataset.loop;
-    video.play().catch(function () {});
+    videoIn.removeEventListener("ended", onIntroEnded);
+    showVideo(videoLoop);
+    videoLoop.currentTime = 0;
+    videoLoop.play().catch(function () {});
     maybeReveal();
   });
 
@@ -80,8 +93,7 @@
     maybeReveal();
   }, MAX_WAIT_MS);
 
-  video.src = video.dataset.in;
-  video.play().catch(function () {
+  videoIn.play().catch(function () {
     introPlaying = false;
     maybeReveal();
   });

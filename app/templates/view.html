@@ -9,13 +9,30 @@
 <body>
   <div id="splash">
     <video
-      id="splash-video"
-      data-in="{{ url_for('static', filename='video/splash_in.mp4') }}"
-      data-loop="{{ url_for('static', filename='video/splash_loop.mp4') }}"
-      data-out="{{ url_for('static', filename='video/splash_out.mp4') }}"
+      id="video-in"
+      class="splash-video active"
+      src="{{ url_for('static', filename='video/splash_in.mp4') }}"
       autoplay
       muted
       playsinline
+      preload="auto"
+    ></video>
+    <video
+      id="video-loop"
+      class="splash-video"
+      src="{{ url_for('static', filename='video/splash_loop.mp4') }}"
+      muted
+      playsinline
+      preload="auto"
+      loop
+    ></video>
+    <video
+      id="video-out"
+      class="splash-video"
+      src="{{ url_for('static', filename='video/splash_out.mp4') }}"
+      muted
+      playsinline
+      preload="auto"
     ></video>
   </div>
 
