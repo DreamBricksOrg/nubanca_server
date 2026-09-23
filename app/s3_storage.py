@@ -31,3 +31,10 @@ def object_exists(key: str) -> bool:
             return False
         raise
     return True
+
+
+def generate_presigned_url(key: str, filename: str, expires_in: int, download: bool = False) -> str:
+    params = {"Bucket": _bucket(), "Key": key}
+    if download:
+        params["ResponseContentDisposition"] = f'attachment; filename="{filename}"'
+    return _client().generate_presigned_url("get_object", Params=params, ExpiresIn=expires_in)
