@@ -11,7 +11,7 @@
 
 :root {
   --purple: #8D0DE3;
-  --sand: #F3EFE6;
+  --sand: #F4F4F4;
   --black: #000000;
   --white: #FFFFFF;
 }
@@ -63,6 +63,7 @@ body {
 
 .card p {
   font-size: 16px;
+  font-weight: 600;
   line-height: 1.5;
   margin: 0 0 16px;
 }
