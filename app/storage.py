@@ -1,4 +1,6 @@
+import os
 import shutil
+import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -88,3 +90,17 @@ def save_uploaded_image(file_storage, dest_folder: Path) -> Path:
     dest = dest_folder / name
     file_storage.save(str(dest))
     return dest
+
+
+def save_uploaded_image_to_tempfile(file_storage) -> Path:
+    if file_storage is None or not file_storage.filename:
+        raise ValueError("Nenhum arquivo enviado")
+    if not is_allowed_extension(file_storage.filename):
+        raise ValueError("Extensão de arquivo não permitida")
+
+    ext = Path(file_storage.filename).suffix.lower()
+    fd, temp_name = tempfile.mkstemp(suffix=ext)
+    temp_path = Path(temp_name)
+    with os.fdopen(fd, "wb") as f:
+        file_storage.save(f)
+    return temp_path

@@ -185,3 +185,37 @@ def test_build_unique_filename_generates_different_names_each_call():
     second = build_unique_filename(".jpg")
 
     assert first != second
+
+
+from app.storage import save_uploaded_image_to_tempfile
+
+
+def test_save_uploaded_image_to_tempfile_raises_for_missing_file():
+    try:
+        save_uploaded_image_to_tempfile(None)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_to_tempfile_raises_for_disallowed_extension():
+    upload = FileStorage(stream=io.BytesIO(b"x"), filename="final.gif")
+
+    try:
+        save_uploaded_image_to_tempfile(upload)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_to_tempfile_writes_content_and_returns_path():
+    upload = FileStorage(stream=io.BytesIO(b"binary-image-data"), filename="final.jpg")
+
+    temp_path = save_uploaded_image_to_tempfile(upload)
+
+    try:
+        assert temp_path.exists()
+        assert temp_path.suffix == ".jpg"
+        assert temp_path.read_bytes() == b"binary-image-data"
+    finally:
+        temp_path.unlink(missing_ok=True)
