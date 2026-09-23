@@ -219,3 +219,8 @@ def test_save_uploaded_image_to_tempfile_writes_content_and_returns_path():
         assert temp_path.read_bytes() == b"binary-image-data"
     finally:
         temp_path.unlink(missing_ok=True)
+
+
+def test_folders_no_longer_includes_back_covers():
+    assert "back-covers" not in FOLDERS
+    assert FOLDERS == ("captures", "photos", "discards")

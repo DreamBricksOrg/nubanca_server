@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-FOLDERS = ("captures", "photos", "discards", "back-covers")
+FOLDERS = ("captures", "photos", "discards")
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 
