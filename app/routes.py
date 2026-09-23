@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
 
-from . import printing, storage
+from . import printing, s3_storage, storage
 
 bp = Blueprint("main", __name__)
 
@@ -120,23 +120,25 @@ def print_image_route():
               type: string
               example: Extensão de arquivo não permitida
     """
-    root = current_app.config["STORAGE_ROOT"]
     file_storage = request.files.get("image")
 
     try:
-        dest = storage.save_uploaded_image(file_storage, root / "back-covers")
+        temp_path = storage.save_uploaded_image_to_tempfile(file_storage)
     except ValueError as exc:
         return jsonify({"success": False, "message": str(exc)}), 400
-    # OSError from a full/unwritable disk is intentionally left uncaught for
-    # now (surfaces as a 500) — no printer hardware exists yet to exercise
-    # this path for real; revisit once /print sees production traffic.
 
-    printing.print_image(dest)
+    try:
+        printing.print_image(temp_path)
+        filename = storage.build_unique_filename(temp_path.suffix)
+        s3_storage.upload_file(temp_path, f"back-covers/{filename}")
+    finally:
+        temp_path.unlink(missing_ok=True)
+
     base_url = current_app.config["BASE_URL"].rstrip("/")
     return jsonify({
         "success": True,
         "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)",
-        "page_url": f"{base_url}/view/{dest.name}",
+        "page_url": f"{base_url}/view/{filename}",
     })
 
 

@@ -1,5 +1,7 @@
 import io
 
+import boto3
+
 
 def test_get_image_returns_404_when_no_new_capture(client):
     response = client.get("/image")
@@ -58,10 +60,12 @@ def test_post_print_saves_file_and_returns_success(client, app):
     assert response.status_code == 200
     body = response.get_json()
     assert body["success"] is True
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    saved = list(back_covers.iterdir())
-    assert len(saved) == 1
-    assert body["page_url"] == f"http://testserver/view/{saved[0].name}"
+
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/{filename}")
+    assert obj["Body"].read() == b"final-image-bytes"
+    assert body["page_url"] == f"http://testserver/view/{filename}"
 
 
 def test_post_print_rejects_disallowed_extension(client):
@@ -95,10 +99,12 @@ def test_post_print_rejects_empty_filename(client):
 
 def test_post_print_calls_print_image(client, app, monkeypatch):
     calls = []
-    monkeypatch.setattr(
-        "app.routes.printing.print_image",
-        lambda path: calls.append(path) or {"printed": False, "message": "stub"},
-    )
+
+    def fake_print_image(path):
+        calls.append((path, path.exists()))
+        return {"printed": False, "message": "stub"}
+
+    monkeypatch.setattr("app.routes.printing.print_image", fake_print_image)
     data = {
         "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
     }
@@ -107,8 +113,10 @@ def test_post_print_calls_print_image(client, app, monkeypatch):
 
     assert response.status_code == 200
     assert len(calls) == 1
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    assert calls[0].parent == back_covers
+    path, existed_during_call = calls[0]
+    assert existed_during_call is True
+    assert path.suffix == ".jpg"
+    assert not path.exists()
 
 
 def test_serve_file_returns_file_from_allowed_folder(client, app):
@@ -146,12 +154,13 @@ def test_full_capture_to_print_flow(client, app):
         content_type="multipart/form-data",
     )
     assert print_response.status_code == 200
-    assert print_response.get_json()["success"] is True
+    body = print_response.get_json()
+    assert body["success"] is True
 
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    saved_files = list(back_covers.iterdir())
-    assert len(saved_files) == 1
-    assert saved_files[0].read_bytes() == b"treated-collage-bytes"
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/{filename}")
+    assert obj["Body"].read() == b"treated-collage-bytes"
 
 
 def test_view_photo_renders_page_for_existing_back_cover(client, app):
