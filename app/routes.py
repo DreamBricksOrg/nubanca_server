@@ -182,7 +182,7 @@ def serve_file(folder, filename):
         in: path
         type: string
         required: true
-        enum: [captures, photos, discards, back-covers]
+        enum: [captures, photos, discards]
       - name: filename
         in: path
         type: string

@@ -180,8 +180,28 @@ def test_view_photo_renders_page_for_existing_back_cover(client, app):
     assert "share-btn" in body
     assert "download-btn" in body
 
+    import re
+    img_src_match = re.search(r'id="photo"[^>]*\bsrc="([^"]+)"', body)
+    download_href_match = re.search(r'id="download-btn"[^>]*\bhref="([^"]+)"', body)
+    assert img_src_match and download_href_match
+    assert img_src_match.group(1) != download_href_match.group(1)
+    assert "response-content-disposition" in download_href_match.group(1)
+
 
 def test_view_photo_returns_404_for_unknown_file(client):
     response = client.get("/view/does-not-exist.jpg")
+
+    assert response.status_code == 404
+
+
+def test_serve_file_returns_404_for_back_covers_folder(client, app):
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/20260922_143201.jpg",
+        Body=b"x",
+    )
+
+    response = client.get("/files/back-covers/20260922_143201.jpg")
 
     assert response.status_code == 404
