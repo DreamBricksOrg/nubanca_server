@@ -129,6 +129,11 @@ body {
   text-decoration: none;
   border: none;
   cursor: pointer;
+  transition: transform 0.2s ease-in-out; 
+}
+
+.btn:hover {
+  transform: scale(1.05);
 }
 
 .btn-primary {
