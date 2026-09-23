@@ -6,14 +6,13 @@ API Flask para o fluxo de captura e impressão de fotos: uma câmera Sony grava 
 
 1. A câmera salva a foto capturada em `storage/captures/`.
 2. O tablet faz polling em `GET /image`. Quando há uma foto nova, ela é movida para `storage/photos/` e sua URL é retornada.
-3. O tablet pode descartar a foto (`POST /discard`) ou tratá-la (colagem) e enviar o resultado final (`POST /print`), que salva a imagem em `storage/back-covers/` e aciona a impressão.
+3. O tablet pode descartar a foto (`POST /discard`) ou tratá-la (colagem) e enviar o resultado final (`POST /print`), que envia a imagem para o bucket S3 (prefixo `back-covers/`) e aciona a impressão.
 
 ```
 storage/
 ├── captures/     # fotos cruas da câmera (entrada)
 ├── photos/       # fotos promovidas, aguardando tratamento no tablet
-├── discards/     # fotos descartadas
-└── back-covers/  # imagens finais tratadas, prontas para impressão
+└── discards/     # fotos descartadas
 ```
 
 ## Como rodar
@@ -36,13 +35,32 @@ pip install -r requirements-dev.txt   # inclui pytest; use requirements.txt para
 Copie `.env.example` para `.env` e ajuste se necessário:
 
 ```
-STORAGE_ROOT=storage       # pasta raiz onde captures/photos/discards/back-covers são criadas
+STORAGE_ROOT=storage       # pasta raiz onde captures/photos/discards são criadas
 HOST=0.0.0.0
 PORT=5000
 BASE_URL=http://localhost:5000   # usado para montar as URLs retornadas por /image
+AWS_ACCESS_KEY_ID=               # credenciais AWS usadas para enviar back-covers ao S3
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=                   # bucket onde back-covers/<arquivo> é salvo
+S3_PRESIGNED_URL_EXPIRES=86400   # validade (segundos) das URLs presigned usadas em /view
 ```
 
-As 4 subpastas de `STORAGE_ROOT` são criadas automaticamente ao iniciar o servidor, se não existirem.
+As 3 subpastas de `STORAGE_ROOT` são criadas automaticamente ao iniciar o servidor, se não existirem. `back-covers` não é mais uma pasta local — as imagens finais vão direto para o S3.
+
+**Importante — CORS do bucket:** o botão "Compartilhar" na página `/view/<filename>` faz um `fetch()` client-side na URL presignada do S3 para montar um arquivo compartilhável (via `navigator.share`). Esse `fetch()` é cross-origin (o navegador está no domínio do app, a imagem está no domínio do S3), então o bucket **precisa de uma configuração de CORS** permitindo `GET` a partir da origem do app (ou `*`), senão o `fetch()` falha silenciosamente e o botão cai para compartilhar apenas o link, sem anexar a foto. Exemplo mínimo de CORS config do bucket (S3 console → bucket → Permissions → CORS):
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://seu-dominio-do-app.com"],
+    "AllowedMethods": ["GET"],
+    "AllowedHeaders": ["*"]
+  }
+]
+```
+
+O botão DOWNLOAD e a exibição da foto (`<img>`) não dependem de CORS — funcionam normalmente mesmo sem essa configuração.
 
 ### 4. Rodar o servidor
 
@@ -89,7 +107,7 @@ Descarta a foto mais recente de `photos/`, movendo-a para `discards/`. Não rece
 
 ### `POST /print`
 
-Recebe a imagem final tratada (colagem feita pelo tablet) como upload `multipart/form-data`, salva em `back-covers/` e aciona a impressão.
+Recebe a imagem final tratada (colagem feita pelo tablet) como upload `multipart/form-data`, envia para o bucket S3 (prefixo `back-covers/`) e aciona a impressão.
 
 **Parâmetros (form-data):**
 
@@ -112,18 +130,18 @@ curl -X POST http://localhost:5000/print -F "image=@collage.jpg"
 
 ### `GET /view/<filename>`
 
-Página HTML (não JSON) para o cliente final ver a foto impressa no celular, com botões de **Compartilhar** (via `navigator.share` do navegador) e **Download**. `<filename>` é o nome do arquivo em `back-covers/` (normalmente obtido do `page_url` retornado por `POST /print`).
+Página HTML (não JSON) para o cliente final ver a foto impressa no celular, com botões de **Compartilhar** (via `navigator.share` do navegador) e **Download**. `<filename>` é o nome do objeto salvo no S3 sob o prefixo `back-covers/` (normalmente obtido do `page_url` retornado por `POST /print`). A imagem em si é servida via presigned URL do S3 — a página faz um `head_object` no S3 para confirmar que o arquivo existe antes de renderizar.
 
 Mostra uma splashscreen com a animação do logo (roxo/branco, seguindo o brand guideline da Nubank) enquanto a página e a foto carregam, evitando qualquer flash de conteúdo sem estilo.
 
 | Status | Quando |
 |---|---|
 | `200` | Retorna a página HTML. |
-| `404` | Não existe arquivo com esse nome em `back-covers/`. |
+| `404` | Não existe objeto com essa chave em `back-covers/` no S3. |
 
 ### `GET /files/<folder>/<filename>`
 
-Serve um arquivo salvo em uma das 4 pastas de armazenamento. `<folder>` deve ser exatamente `captures`, `photos`, `discards` ou `back-covers` — qualquer outro valor retorna `404`.
+Serve um arquivo salvo em uma das 3 pastas de armazenamento local. `<folder>` deve ser exatamente `captures`, `photos` ou `discards` — qualquer outro valor (incluindo `back-covers`, que agora vive no S3, não em disco) retorna `404`.
 
 | Status | Quando |
 |---|---|
