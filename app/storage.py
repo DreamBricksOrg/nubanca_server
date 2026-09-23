@@ -1,4 +1,5 @@
 import shutil
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -39,6 +40,13 @@ def build_timestamped_filename(ext: str, dest_folder: Path, moment: datetime = N
         candidate = f"{base}_{counter}{ext}"
         counter += 1
     return candidate
+
+
+def build_unique_filename(ext: str) -> str:
+    ext = ext.lower()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = uuid.uuid4().hex[:8]
+    return f"{timestamp}_{suffix}{ext}"
 
 
 def promote_latest_capture(captures_folder: Path, photos_folder: Path):

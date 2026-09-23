@@ -167,3 +167,21 @@ def test_save_uploaded_image_saves_with_timestamped_name(tmp_path):
     assert dest.parent == dest_folder
     assert dest.exists()
     assert dest.read_bytes() == b"binary-image-data"
+
+
+import re
+
+from app.storage import build_unique_filename
+
+
+def test_build_unique_filename_matches_expected_shape():
+    name = build_unique_filename(".jpg")
+
+    assert re.match(r"^\d{8}_\d{6}_[0-9a-f]{8}\.jpg$", name)
+
+
+def test_build_unique_filename_generates_different_names_each_call():
+    first = build_unique_filename(".jpg")
+    second = build_unique_filename(".jpg")
+
+    assert first != second
