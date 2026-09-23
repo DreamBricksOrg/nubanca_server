@@ -15,6 +15,7 @@
   --sand: #F3EFE6;
   --black: #000000;
   --white: #FFFFFF;
+  --offwhite:#F4F4F4;
 }
 
 * {
@@ -105,7 +106,7 @@ body {
 #photo-error {
   padding: 48px 16px;
   text-align: center;
-  background: var(--sand);
+  background: var(--offwhite);
   color: var(--black);
 }
 
