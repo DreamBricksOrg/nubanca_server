@@ -30,9 +30,11 @@ source venv/Scripts/activate   # Windows (git-bash) — no cmd/PowerShell use ve
 pip install -r requirements-dev.txt   # inclui pytest; use requirements.txt para produção
 ```
 
-### 3. Configurar variáveis de ambiente (opcional)
+### 3. Configurar variáveis de ambiente
 
 Copie `.env.example` para `.env` e ajuste se necessário:
+
+As variáveis `STORAGE_ROOT`, `HOST`, `PORT` e `BASE_URL` têm defaults razoáveis; as variáveis `AWS_*` são **obrigatórias** para `POST /print` e `GET /view/<filename>` funcionarem, já que a imagem final é enviada e servida via S3.
 
 ```
 STORAGE_ROOT=storage       # pasta raiz onde captures/photos/discards são criadas
@@ -75,6 +77,8 @@ O servidor sobe em `http://<HOST>:<PORT>` (por padrão `http://localhost:5000`).
 ```bash
 pytest
 ```
+
+Os testes usam `moto` para mockar o S3 — não fazem chamadas reais à AWS, nem exigem credenciais configuradas.
 
 ## Documentação interativa (Swagger)
 
