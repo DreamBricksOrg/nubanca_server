@@ -1,0 +1,49 @@
+@import url("main.css");
+
+body {
+  background-color: var(--light-background-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+
+  flex: 1;
+  min-height: 0;
+  
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+#content > img {
+  width: 80%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+button {
+  background-color: var(--light-button-color);
+  border-radius: 30px;
+  corner-shape: squircle;
+  width: 100px;
+}
+
+#disapproved {
+  margin-right: 50px;
+  background-color: #e9a6a7;
+}
+#approved {
+  background-color: #a7d296;
+}
+
+#disapproved:active {
+  background-color: #da9ac7;
+}
+#approved:active {
+  background-color: #85d1bd;
+}

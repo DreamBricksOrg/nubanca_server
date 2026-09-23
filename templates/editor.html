@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <title>editor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/editor.css') }}"
+    />
+  </head>
+  <body>
+    <header>
+      <img
+        id="logo"
+        src="{{ url_for('static', filename='images/logo_branco.png') }}"
+        alt="Logo"
+      />
+    </header>
+    <button id="input_up">↑</button>
+    <div id="middle">
+      <button id="input_left">←</button>
+      <div id="editor">
+        <canvas id="canvas2"></canvas>
+        <canvas id="canvas1"></canvas>
+      </div>
+      <button id="input_right">→</button>
+    </div>
+    <button id="input_bottom">↓</button>
+    <div id="zoom_container">
+      <button id="zoom_in">+</button>
+      <button id="zoom_out">-</button>
+    </div>
+
+    <footer>
+      <button id="saveImage">Salvar Imagem</button>
+    </footer>
+  </body>
+  <script>
+    const img1Path =
+      "{{ url_for('static', filename='images/contigo sem fundo.png') }}";
+    const img2Path = "{{ url_for('static', filename='images/teste.jpg') }}";
+  </script>
+  <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+</html>

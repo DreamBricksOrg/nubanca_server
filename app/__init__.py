@@ -29,12 +29,14 @@ SWAGGER_TEMPLATE = {
 
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder="../static",)
     app.config.from_object(config_class)
     ensure_folders(app.config["STORAGE_ROOT"])
 
     from .routes import bp
+    from .pages import bp as bp_pages
     app.register_blueprint(bp)
+    app.register_blueprint(bp_pages)
 
     Swagger(app, config=SWAGGER_CONFIG, template=SWAGGER_TEMPLATE)
 

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QrCode</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/qrcode.css') }}"
+    />
+  </head>
+  <body>
+    <header>
+      <img
+        id="logo"
+        src="{{ url_for('static', filename='images/logo_branco.png') }}"
+        alt="Logo"
+      />
+    </header>
+    <!-- <div class="content" id="found_image">
+      <span>Gostou da sua foto?</span>
+      <span>Leve ela com você!</span>
+      <img
+        id="qr"
+        src="{{ url_for('static', filename='images/qrcode.svg') }}"
+        alt="qr"
+      />-
+    </div> -->
+    <div class="content" id="waiting_image">
+      <span>Esperando a Foto</span>
+    </div>
+  </body>
+</html>

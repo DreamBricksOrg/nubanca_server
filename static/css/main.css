@@ -1,0 +1,42 @@
+:root {
+  --dark-background-color: #000000;
+  --dark-button-color: #8D0DE3;
+  --dark-button-text-color: white;
+
+  --light-background-color: #8D0DE3;
+  --light-button-color: #ffffff;
+  --light-button-text-color: #000000;
+}
+
+html,
+body {
+  height: 100% !important;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+}
+
+#logo {
+  width: 25%;
+  min-width: 100px;
+  max-width: 150px;
+  margin: 20px;
+}
+
+header {
+  flex-shrink: 0;
+  width: 100%;
+}
+footer {
+  flex-shrink: 0;
+  margin-top: 10px;
+  padding-bottom: 10px;
+  height: 80px;
+}
+
+button {
+  font-size: 20px;
+  border: 0px;
+  height: 75px;
+}

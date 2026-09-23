@@ -1,0 +1,47 @@
+@import url("main.css");
+
+body {
+  background-color: var(--dark-background-color);
+  display: flex;
+  flex-direction: column;
+}
+
+#content {
+  color: white;
+  margin: 50px;
+  flex: 1;
+  min-height: 0;
+  font-size: 20px;
+  overflow-y: auto;
+}
+
+#logo {
+  width: 25%;
+  min-width: 100px;
+  max-width: 150px;
+  margin: 20px;
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+}
+
+p {
+  text-align: justify;
+  text-justify: inter-word;
+  font-size: min(4vw, 20px);
+}
+
+button {
+  background-color: var(--dark-button-color);
+  color: var(--dark-button-text-color);
+  font-size: 20px;
+  border: 0px;
+  position: absolute;
+  width: min(60vw, 600px);
+  height: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 100px;
+}
