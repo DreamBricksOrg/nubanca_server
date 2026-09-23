@@ -21,6 +21,13 @@ def _bucket() -> str:
     return current_app.config["AWS_S3_BUCKET"]
 
 
+def back_cover_key(filename: str) -> str:
+    location = current_app.config.get("EVENT_LOCATION") or ""
+    if location:
+        return f"back-covers/{location}/{filename}"
+    return f"back-covers/{filename}"
+
+
 def upload_file(local_path: Path, key: str) -> None:
     _client().upload_file(str(local_path), _bucket(), key)
 

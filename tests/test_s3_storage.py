@@ -15,6 +15,17 @@ def test_mock_bucket_is_ready(app):
 from app import s3_storage
 
 
+def test_back_cover_key_without_event_location(app):
+    with app.app_context():
+        assert s3_storage.back_cover_key("photo.jpg") == "back-covers/photo.jpg"
+
+
+def test_back_cover_key_with_event_location(app, monkeypatch):
+    monkeypatch.setitem(app.config, "EVENT_LOCATION", "sp")
+    with app.app_context():
+        assert s3_storage.back_cover_key("photo.jpg") == "back-covers/sp/photo.jpg"
+
+
 def test_upload_file_puts_object_in_bucket(app, tmp_path):
     local_file = tmp_path / "photo.jpg"
     local_file.write_bytes(b"image-bytes")

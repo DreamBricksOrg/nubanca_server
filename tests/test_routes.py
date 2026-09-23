@@ -205,3 +205,35 @@ def test_serve_file_returns_404_for_back_covers_folder(client, app):
     response = client.get("/files/back-covers/20260922_143201.jpg")
 
     assert response.status_code == 404
+
+
+def test_post_print_uses_event_location_prefix_when_configured(client, app, monkeypatch):
+    monkeypatch.setitem(app.config, "EVENT_LOCATION", "sp")
+    data = {
+        "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/sp/{filename}")
+    assert obj["Body"].read() == b"final-image-bytes"
+
+
+def test_view_photo_uses_event_location_prefix_when_configured(client, app, monkeypatch):
+    monkeypatch.setitem(app.config, "EVENT_LOCATION", "rj")
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/rj/20260922_143201.jpg",
+        Body=b"final-bytes",
+    )
+
+    response = client.get("/view/20260922_143201.jpg")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "back-covers/rj/20260922_143201.jpg" in body

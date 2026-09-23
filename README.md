@@ -46,7 +46,10 @@ AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-east-1
 AWS_S3_BUCKET=                   # bucket onde back-covers/<arquivo> é salvo
 S3_PRESIGNED_URL_EXPIRES=86400   # validade (segundos) das URLs presigned usadas em /view
+EVENT_LOCATION=                  # opcional; prefixo de local para rodar múltiplas instâncias no mesmo bucket
 ```
+
+`EVENT_LOCATION` é opcional e serve para rodar o mesmo bucket S3 compartilhado entre múltiplas instâncias do app em locais diferentes (ex: um evento em SP e outro no RJ simultaneamente) sem colidir. Quando definida (ex: `EVENT_LOCATION=sp`), as imagens finais vão para `back-covers/sp/<arquivo>` em vez de `back-covers/<arquivo>`; cada instância roda com seu próprio `.env` apontando o mesmo `AWS_S3_BUCKET` mas um `EVENT_LOCATION` diferente. Se deixada vazia (padrão), o comportamento é o mesmo de antes — sem prefixo de local.
 
 As 3 subpastas de `STORAGE_ROOT` são criadas automaticamente ao iniciar o servidor, se não existirem. `back-covers` não é mais uma pasta local — as imagens finais vão direto para o S3.
 

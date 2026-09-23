@@ -7,3 +7,7 @@ def test_config_has_s3_settings_with_sane_defaults():
     assert hasattr(Config, "AWS_ACCESS_KEY_ID")
     assert hasattr(Config, "AWS_SECRET_ACCESS_KEY")
     assert hasattr(Config, "AWS_S3_BUCKET")
+
+
+def test_config_defaults_event_location_to_empty_string():
+    assert Config.EVENT_LOCATION == ""

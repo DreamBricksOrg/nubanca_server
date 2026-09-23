@@ -130,7 +130,7 @@ def print_image_route():
     try:
         printing.print_image(temp_path)
         filename = storage.build_unique_filename(temp_path.suffix)
-        s3_storage.upload_file(temp_path, f"back-covers/{filename}")
+        s3_storage.upload_file(temp_path, s3_storage.back_cover_key(filename))
     finally:
         temp_path.unlink(missing_ok=True)
 
@@ -161,7 +161,7 @@ def view_photo(filename):
       404:
         description: The file doesn't exist in back-covers/.
     """
-    key = f"back-covers/{filename}"
+    key = s3_storage.back_cover_key(filename)
     if not s3_storage.object_exists(key):
         abort(404)
 

@@ -13,3 +13,4 @@ class Config:
     AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
     AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
     S3_PRESIGNED_URL_EXPIRES = int(os.environ.get("S3_PRESIGNED_URL_EXPIRES", "86400"))
+    EVENT_LOCATION = os.environ.get("EVENT_LOCATION", "")
