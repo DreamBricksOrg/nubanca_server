@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 *.egg-info/
+ngrok.log
 storage/captures/*
 storage/photos/*
 storage/discards/*
