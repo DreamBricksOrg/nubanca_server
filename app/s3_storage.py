@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import boto3
+from botocore.exceptions import ClientError
 from flask import current_app
 
 
@@ -19,3 +20,14 @@ def _bucket() -> str:
 
 def upload_file(local_path: Path, key: str) -> None:
     _client().upload_file(str(local_path), _bucket(), key)
+
+
+def object_exists(key: str) -> bool:
+    try:
+        _client().head_object(Bucket=_bucket(), Key=key)
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code")
+        if error_code in ("404", "NoSuchKey"):
+            return False
+        raise
+    return True
