@@ -1,4 +1,4 @@
-from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory, url_for
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
 
 from . import printing, s3_storage, storage
 
@@ -161,12 +161,14 @@ def view_photo(filename):
       404:
         description: The file doesn't exist in back-covers/.
     """
-    root = current_app.config["STORAGE_ROOT"]
-    existing_names = {p.name for p in storage.list_image_files(root / "back-covers")}
-    if filename not in existing_names:
+    key = f"back-covers/{filename}"
+    if not s3_storage.object_exists(key):
         abort(404)
-    image_url = url_for("main.serve_file", folder="back-covers", filename=filename)
-    return render_template("view.html", filename=filename, image_url=image_url)
+
+    expires_in = current_app.config["S3_PRESIGNED_URL_EXPIRES"]
+    image_url = s3_storage.generate_presigned_url(key, filename, expires_in)
+    download_url = s3_storage.generate_presigned_url(key, filename, expires_in, download=True)
+    return render_template("view.html", filename=filename, image_url=image_url, download_url=download_url)
 
 
 @bp.get("/files/<folder>/<filename>")

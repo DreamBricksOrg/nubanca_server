@@ -164,15 +164,19 @@ def test_full_capture_to_print_flow(client, app):
 
 
 def test_view_photo_renders_page_for_existing_back_cover(client, app):
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    (back_covers / "20260922_143201.jpg").write_bytes(b"final-bytes")
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/20260922_143201.jpg",
+        Body=b"final-bytes",
+    )
 
     response = client.get("/view/20260922_143201.jpg")
 
     assert response.status_code == 200
     assert response.content_type.startswith("text/html")
     body = response.get_data(as_text=True)
-    assert "/files/back-covers/20260922_143201.jpg" in body
+    assert "back-covers/20260922_143201.jpg" in body
     assert "share-btn" in body
     assert "download-btn" in body
 
