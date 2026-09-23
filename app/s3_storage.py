@@ -5,6 +5,9 @@ from botocore.exceptions import ClientError
 from flask import current_app
 
 
+S3_MAX_PRESIGNED_EXPIRES = 604800  # S3 SigV4 hard cap: 7 days, in seconds
+
+
 def _client():
     return boto3.client(
         "s3",
@@ -34,6 +37,7 @@ def object_exists(key: str) -> bool:
 
 
 def generate_presigned_url(key: str, filename: str, expires_in: int, download: bool = False) -> str:
+    expires_in = min(expires_in, S3_MAX_PRESIGNED_EXPIRES)
     params = {"Bucket": _bucket(), "Key": key}
     if download:
         params["ResponseContentDisposition"] = f'attachment; filename="{filename}"'

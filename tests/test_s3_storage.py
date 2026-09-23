@@ -1,3 +1,6 @@
+import re
+import time
+
 import boto3
 
 
@@ -70,3 +73,31 @@ def test_generate_presigned_url_without_download_has_no_content_disposition(app,
         url = s3_storage.generate_presigned_url("back-covers/photo.jpg", "photo.jpg", 3600)
 
     assert "response-content-disposition" not in url
+
+
+def _expires_param(url: str) -> int:
+    # This environment's boto3 client signs S3 presigned URLs with SigV2
+    # (region us-east-1), which encodes expiry as an absolute Unix
+    # timestamp in an `Expires` query param, not SigV4's `X-Amz-Expires`
+    # duration param. Either way, the value must reflect the (clamped)
+    # expires_in added to "now".
+    match = re.search(r"[?&]Expires=(\d+)", url)
+    assert match, f"no Expires param in {url!r}"
+    return int(match.group(1))
+
+
+def test_generate_presigned_url_clamps_expires_in_to_s3_max(app, tmp_path):
+    local_file = tmp_path / "photo.jpg"
+    local_file.write_bytes(b"x")
+
+    with app.app_context():
+        s3_storage.upload_file(local_file, "back-covers/photo.jpg")
+        before = int(time.time())
+        url_over_max = s3_storage.generate_presigned_url("back-covers/photo.jpg", "photo.jpg", 999999999)
+        url_at_max = s3_storage.generate_presigned_url("back-covers/photo.jpg", "photo.jpg", 604800)
+        after = int(time.time())
+
+    # Both an over-the-cap request and an at-the-cap request must expire
+    # at "now + S3's 7-day (604800s) SigV4 hard cap", not further out.
+    assert before + 604800 <= _expires_param(url_over_max) <= after + 604800
+    assert before + 604800 <= _expires_param(url_at_max) <= after + 604800
