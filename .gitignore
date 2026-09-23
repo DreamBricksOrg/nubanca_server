@@ -15,3 +15,5 @@ storage/back-covers/*
 # Raw brand kit (fonts/videos/images) kept locally for reference only.
 # Only the curated subset (app/static/{css,js,img,video,fonts}) is versioned.
 app/static/templates/
+app/static/fonts/Nu Sans Display/
+app/static/fonts/Nu Sans Text/

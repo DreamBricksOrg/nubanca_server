@@ -8,6 +8,16 @@
   src: url("../fonts/NuSansText-Semibold.ttf") format("truetype");
   font-weight: 600;
 }
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Bold.ttf") format("truetype");
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Nu Sans Display";
+  src: url("../fonts/NuSansDisplay-Medium.otf") format("opentype");
+  font-weight: 500;
+}
 
 :root {
   --purple: #8D0DE3;
@@ -56,14 +66,17 @@ body {
 }
 
 .card h1 {
-  font-size: 32px;
-  font-weight: 600;
+  font-family: "Nu Sans Display", "Nu Sans Text", sans-serif;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 62px;
+  color: var(--black);
   margin: 0 0 16px;
 }
 
 .card p {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.5;
   margin: 0 0 16px;
 }
