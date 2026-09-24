@@ -1,0 +1,86 @@
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Regular.ttf") format("truetype");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Semibold.ttf") format("truetype");
+  font-weight: 600;
+}
+@font-face {
+  font-family: "Nu Sans Text";
+  src: url("../fonts/NuSansText-Bold.ttf") format("truetype");
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Nu Sans Display";
+  src: url("../fonts/NuSansDisplay-Medium.otf") format("opentype");
+  font-weight: 500;
+}
+
+:root {
+  --purple: #8D0DE3;
+  --sand: #F4F4F4;
+  --black: #000000;
+  --white: #FFFFFF;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--sand);
+  font-family: "Nu Sans Text", sans-serif;
+  color: var(--black);
+}
+
+.header {
+  background: var(--purple);
+  padding: 24px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.logo {
+  height: 32px;
+}
+
+.main {
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.card {
+  background: var(--white);
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: 40px 32px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.card h1 {
+  font-family: "Nu Sans Display", "Nu Sans Text", sans-serif;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 62px;
+  color: var(--black);
+  margin: 0 0 16px;
+}
+
+.card p {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}

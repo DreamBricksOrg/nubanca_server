@@ -1,5 +1,7 @@
 import io
 
+import boto3
+
 
 def test_get_image_returns_404_when_no_new_capture(client):
     response = client.get("/image")
@@ -58,8 +60,12 @@ def test_post_print_saves_file_and_returns_success(client, app):
     assert response.status_code == 200
     body = response.get_json()
     assert body["success"] is True
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    assert len(list(back_covers.iterdir())) == 1
+
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/{filename}")
+    assert obj["Body"].read() == b"final-image-bytes"
+    assert body["page_url"] == f"http://testserver/view/{filename}"
 
 
 def test_post_print_rejects_disallowed_extension(client):
@@ -93,10 +99,12 @@ def test_post_print_rejects_empty_filename(client):
 
 def test_post_print_calls_print_image(client, app, monkeypatch):
     calls = []
-    monkeypatch.setattr(
-        "app.routes.printing.print_image",
-        lambda path: calls.append(path) or {"printed": False, "message": "stub"},
-    )
+
+    def fake_print_image(path):
+        calls.append((path, path.exists()))
+        return {"printed": False, "message": "stub"}
+
+    monkeypatch.setattr("app.routes.printing.print_image", fake_print_image)
     data = {
         "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
     }
@@ -105,8 +113,10 @@ def test_post_print_calls_print_image(client, app, monkeypatch):
 
     assert response.status_code == 200
     assert len(calls) == 1
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    assert calls[0].parent == back_covers
+    path, existed_during_call = calls[0]
+    assert existed_during_call is True
+    assert path.suffix == ".jpg"
+    assert not path.exists()
 
 
 def test_serve_file_returns_file_from_allowed_folder(client, app):
@@ -144,9 +154,86 @@ def test_full_capture_to_print_flow(client, app):
         content_type="multipart/form-data",
     )
     assert print_response.status_code == 200
-    assert print_response.get_json()["success"] is True
+    body = print_response.get_json()
+    assert body["success"] is True
 
-    back_covers = app.config["STORAGE_ROOT"] / "back-covers"
-    saved_files = list(back_covers.iterdir())
-    assert len(saved_files) == 1
-    assert saved_files[0].read_bytes() == b"treated-collage-bytes"
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/{filename}")
+    assert obj["Body"].read() == b"treated-collage-bytes"
+
+
+def test_view_photo_renders_page_for_existing_back_cover(client, app):
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/20260922_143201.jpg",
+        Body=b"final-bytes",
+    )
+
+    response = client.get("/view/20260922_143201.jpg")
+
+    assert response.status_code == 200
+    assert response.content_type.startswith("text/html")
+    body = response.get_data(as_text=True)
+    assert "back-covers/20260922_143201.jpg" in body
+    assert "share-btn" in body
+    assert "download-btn" in body
+
+    import re
+    img_src_match = re.search(r'id="photo"[^>]*\bsrc="([^"]+)"', body)
+    download_href_match = re.search(r'id="download-btn"[^>]*\bhref="([^"]+)"', body)
+    assert img_src_match and download_href_match
+    assert img_src_match.group(1) != download_href_match.group(1)
+    assert "response-content-disposition" in download_href_match.group(1)
+
+
+def test_view_photo_returns_404_for_unknown_file(client):
+    response = client.get("/view/does-not-exist.jpg")
+
+    assert response.status_code == 404
+
+
+def test_serve_file_returns_404_for_back_covers_folder(client, app):
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/20260922_143201.jpg",
+        Body=b"x",
+    )
+
+    response = client.get("/files/back-covers/20260922_143201.jpg")
+
+    assert response.status_code == 404
+
+
+def test_post_print_uses_event_location_prefix_when_configured(client, app, monkeypatch):
+    monkeypatch.setitem(app.config, "EVENT_LOCATION", "sp")
+    data = {
+        "image": (io.BytesIO(b"final-image-bytes"), "final.jpg"),
+    }
+
+    response = client.post("/print", data=data, content_type="multipart/form-data")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    filename = body["page_url"].rsplit("/", 1)[-1]
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    obj = s3.get_object(Bucket=app.config["AWS_S3_BUCKET"], Key=f"back-covers/sp/{filename}")
+    assert obj["Body"].read() == b"final-image-bytes"
+
+
+def test_view_photo_uses_event_location_prefix_when_configured(client, app, monkeypatch):
+    monkeypatch.setitem(app.config, "EVENT_LOCATION", "rj")
+    s3 = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    s3.put_object(
+        Bucket=app.config["AWS_S3_BUCKET"],
+        Key="back-covers/rj/20260922_143201.jpg",
+        Body=b"final-bytes",
+    )
+
+    response = client.get("/view/20260922_143201.jpg")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "back-covers/rj/20260922_143201.jpg" in body

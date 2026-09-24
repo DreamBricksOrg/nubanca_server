@@ -1,3 +1,4 @@
 Flask==3.0.3
 python-dotenv==1.0.1
 flasgger==0.9.7.1
+boto3==1.35.99

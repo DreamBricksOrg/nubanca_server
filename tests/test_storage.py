@@ -167,3 +167,60 @@ def test_save_uploaded_image_saves_with_timestamped_name(tmp_path):
     assert dest.parent == dest_folder
     assert dest.exists()
     assert dest.read_bytes() == b"binary-image-data"
+
+
+import re
+
+from app.storage import build_unique_filename
+
+
+def test_build_unique_filename_matches_expected_shape():
+    name = build_unique_filename(".jpg")
+
+    assert re.match(r"^\d{8}_\d{6}_[0-9a-f]{8}\.jpg$", name)
+
+
+def test_build_unique_filename_generates_different_names_each_call():
+    first = build_unique_filename(".jpg")
+    second = build_unique_filename(".jpg")
+
+    assert first != second
+
+
+from app.storage import save_uploaded_image_to_tempfile
+
+
+def test_save_uploaded_image_to_tempfile_raises_for_missing_file():
+    try:
+        save_uploaded_image_to_tempfile(None)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_to_tempfile_raises_for_disallowed_extension():
+    upload = FileStorage(stream=io.BytesIO(b"x"), filename="final.gif")
+
+    try:
+        save_uploaded_image_to_tempfile(upload)
+        assert False, "expected ValueError"
+    except ValueError:
+        pass
+
+
+def test_save_uploaded_image_to_tempfile_writes_content_and_returns_path():
+    upload = FileStorage(stream=io.BytesIO(b"binary-image-data"), filename="final.jpg")
+
+    temp_path = save_uploaded_image_to_tempfile(upload)
+
+    try:
+        assert temp_path.exists()
+        assert temp_path.suffix == ".jpg"
+        assert temp_path.read_bytes() == b"binary-image-data"
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+def test_folders_no_longer_includes_back_covers():
+    assert "back-covers" not in FOLDERS
+    assert FOLDERS == ("captures", "photos", "discards")

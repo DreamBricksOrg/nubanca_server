@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Página não encontrada</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/not_found.css') }}">
+</head>
+<body>
+  <header class="header">
+    <img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="nu" class="logo">
+  </header>
+
+  <main class="main">
+    <div class="card">
+      <h1>Ops!</h1>
+      <p>Parece que essa página não foi encontrada.</p>
+      <p>A foto que você está procurando pode não existir mais, ou o link pode ter expirado.</p>
+    </div>
+  </main>
+</body>
+</html>

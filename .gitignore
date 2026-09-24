@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .env
 *.egg-info/
+ngrok.log
 storage/captures/*
 storage/photos/*
 storage/discards/*
@@ -11,3 +12,9 @@ storage/back-covers/*
 !storage/photos/.gitkeep
 !storage/discards/.gitkeep
 !storage/back-covers/.gitkeep
+
+# Raw brand kit (fonts/videos/images) kept locally for reference only.
+# Only the curated subset (app/static/{css,js,img,video,fonts}) is versioned.
+app/static/templates/
+app/static/fonts/Nu Sans Display/
+app/static/fonts/Nu Sans Text/

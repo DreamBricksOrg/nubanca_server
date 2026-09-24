@@ -1,6 +1,6 @@
-from flask import Blueprint, abort, current_app, jsonify, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
 
-from . import printing, storage
+from . import printing, s3_storage, storage
 
 bp = Blueprint("main", __name__)
 
@@ -105,6 +105,9 @@ def print_image_route():
             message:
               type: string
               example: Imagem salva em back-covers; impressão ainda não implementada (stub)
+            page_url:
+              type: string
+              example: http://localhost:5000/view/20260922_143201.jpg
       400:
         description: No file sent, or its extension isn't allowed.
         schema:
@@ -117,22 +120,55 @@ def print_image_route():
               type: string
               example: Extensão de arquivo não permitida
     """
-    root = current_app.config["STORAGE_ROOT"]
     file_storage = request.files.get("image")
 
     try:
-        dest = storage.save_uploaded_image(file_storage, root / "back-covers")
+        temp_path = storage.save_uploaded_image_to_tempfile(file_storage)
     except ValueError as exc:
         return jsonify({"success": False, "message": str(exc)}), 400
-    # OSError from a full/unwritable disk is intentionally left uncaught for
-    # now (surfaces as a 500) — no printer hardware exists yet to exercise
-    # this path for real; revisit once /print sees production traffic.
 
-    printing.print_image(dest)
+    try:
+        printing.print_image(temp_path)
+        filename = storage.build_unique_filename(temp_path.suffix)
+        s3_storage.upload_file(temp_path, s3_storage.back_cover_key(filename))
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+    base_url = current_app.config["BASE_URL"].rstrip("/")
     return jsonify({
         "success": True,
         "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)",
+        "page_url": f"{base_url}/view/{filename}",
     })
+
+
+@bp.get("/view/<filename>")
+def view_photo(filename):
+    """Branded mobile page to view, share and download a printed photo.
+    ---
+    tags:
+      - print
+    parameters:
+      - name: filename
+        in: path
+        type: string
+        required: true
+    produces:
+      - text/html
+    responses:
+      200:
+        description: HTML page with the photo, a share button and a download button.
+      404:
+        description: The file doesn't exist in back-covers/.
+    """
+    key = s3_storage.back_cover_key(filename)
+    if not s3_storage.object_exists(key):
+        abort(404)
+
+    expires_in = current_app.config["S3_PRESIGNED_URL_EXPIRES"]
+    image_url = s3_storage.generate_presigned_url(key, filename, expires_in)
+    download_url = s3_storage.generate_presigned_url(key, filename, expires_in, download=True)
+    return render_template("view.html", filename=filename, image_url=image_url, download_url=download_url)
 
 
 @bp.get("/files/<folder>/<filename>")
@@ -146,7 +182,7 @@ def serve_file(folder, filename):
         in: path
         type: string
         required: true
-        enum: [captures, photos, discards, back-covers]
+        enum: [captures, photos, discards]
       - name: filename
         in: path
         type: string

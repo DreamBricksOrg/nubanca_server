@@ -1,5 +1,5 @@
 from flasgger import Swagger
-from flask import Flask
+from flask import Flask, render_template
 
 from .config import Config
 from .storage import ensure_folders
@@ -39,5 +39,9 @@ def create_app(config_class=Config):
     app.register_blueprint(bp_pages)
 
     Swagger(app, config=SWAGGER_CONFIG, template=SWAGGER_TEMPLATE)
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template("not_found.html"), 404
 
     return app

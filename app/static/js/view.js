@@ -1,0 +1,156 @@
+(function () {
+  "use strict";
+
+  var splash = document.getElementById("splash");
+  var videoIn = document.getElementById("video-in");
+  var videoLoop = document.getElementById("video-loop");
+  var videoOut = document.getElementById("video-out");
+  var content = document.getElementById("content");
+  var photo = document.getElementById("photo");
+  var photoError = document.getElementById("photo-error");
+
+  var MIN_SPLASH_MS = 900;
+  var MAX_WAIT_MS = 6000;
+
+  var introPlaying = true;
+  var photoSettled = false;
+  var photoOk = false;
+  var minTimeDone = false;
+  var revealed = false;
+
+  // All three videos are preloaded and stacked from page load; switching
+  // between them is just an opacity toggle (never touches `.src`), which
+  // avoids the reload/blank-frame flash a src swap on a single <video>
+  // element would cause.
+  function showVideo(video) {
+    [videoIn, videoLoop, videoOut].forEach(function (v) {
+      v.classList.toggle("active", v === video);
+    });
+  }
+
+  // preload="auto" only buffers the file - it doesn't decode a frame, so
+  // the first play() on a video can still show a brief blank frame while
+  // the decoder spins up. Priming (play then immediately pause at time 0)
+  // forces that first-frame decode ahead of time, while videoIn is still
+  // playing, so videoLoop/videoOut already have a frame ready to paint
+  // the instant we switch to them.
+  function primeVideo(video) {
+    video.play().then(function () {
+      video.pause();
+      video.currentTime = 0;
+    }).catch(function () {});
+  }
+
+  primeVideo(videoLoop);
+  primeVideo(videoOut);
+
+  function maybeReveal() {
+    if (revealed || introPlaying || !photoSettled || !minTimeDone) {
+      return;
+    }
+    revealed = true;
+    videoLoop.pause();
+    showVideo(videoOut);
+    videoOut.currentTime = 0;
+    videoOut.onended = finishReveal;
+    videoOut.play().catch(finishReveal);
+  }
+
+  function finishReveal() {
+    if (content.classList.contains("hidden") === false) {
+      return;
+    }
+    splash.classList.add("splash-hidden");
+    content.classList.remove("hidden");
+    if (!photoOk) {
+      photo.classList.add("hidden");
+      photoError.classList.remove("hidden");
+    }
+  }
+
+  videoIn.addEventListener("ended", function onIntroEnded() {
+    if (!introPlaying) {
+      return;
+    }
+    introPlaying = false;
+    videoIn.removeEventListener("ended", onIntroEnded);
+    showVideo(videoLoop);
+    videoLoop.currentTime = 0;
+    videoLoop.play().catch(function () {});
+    maybeReveal();
+  });
+
+  function settlePhoto(ok) {
+    photoOk = ok;
+    photoSettled = true;
+    maybeReveal();
+  }
+
+  if (photo.complete) {
+    settlePhoto(photo.naturalWidth > 0);
+  } else {
+    photo.addEventListener("load", function () {
+      settlePhoto(true);
+    });
+    photo.addEventListener("error", function () {
+      settlePhoto(false);
+    });
+  }
+
+  setTimeout(function () {
+    minTimeDone = true;
+    maybeReveal();
+  }, MIN_SPLASH_MS);
+
+  setTimeout(function () {
+    introPlaying = false;
+    minTimeDone = true;
+    photoSettled = true;
+    maybeReveal();
+  }, MAX_WAIT_MS);
+
+  videoIn.play().catch(function () {
+    introPlaying = false;
+    maybeReveal();
+  });
+
+  var shareBtn = document.getElementById("share-btn");
+  shareBtn.addEventListener("click", function () {
+    var imageUrl = photo.dataset.src;
+    var pageUrl = window.location.href;
+
+    function shareUrlFallback() {
+      if (navigator.share) {
+        navigator.share({ title: "Minha foto", url: pageUrl }).catch(function () {});
+        return;
+      }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(pageUrl).then(function () {
+          alert("Link copiado!");
+        }).catch(function () {
+          alert(pageUrl);
+        });
+      } else {
+        alert(pageUrl);
+      }
+    }
+
+    if (!navigator.canShare) {
+      shareUrlFallback();
+      return;
+    }
+
+    fetch(imageUrl)
+      .then(function (response) {
+        return response.blob();
+      })
+      .then(function (blob) {
+        var file = new File([blob], "foto.jpg", { type: blob.type || "image/jpeg" });
+        if (navigator.canShare({ files: [file] })) {
+          return navigator.share({ files: [file], title: "Minha foto" });
+        }
+        shareUrlFallback();
+      })
+      .catch(shareUrlFallback);
+  });
+})();
