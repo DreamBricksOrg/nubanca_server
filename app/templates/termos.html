@@ -13,13 +13,13 @@
     <header>
       <img
         id="logo"
-        src="{{ url_for('static', filename='images/logo_roxo.png') }}"
+        src="{{ url_for('static', filename='img/logo_roxo.png') }}"
         alt="Logo"
       />
     </header>
     <div id="content">
       <h3 class="center">Leia os termos e condições:</h3>
-      <br>
+      <br />
       <p>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cursus ut
         integer ipsum id ipsum nulla. Luctus vitae magna arcu at in facilisis.
@@ -56,7 +56,11 @@
       </p>
     </div>
     <footer>
-      <button>Li e aceito os termos e condições</button>
+      <button id="aceito_termos">Li e aceito os termos e condições</button>
     </footer>
+    <script>
+      const BASE_URL = "{{ server_url }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/termos.js') }}"></script>
   </body>
 </html>

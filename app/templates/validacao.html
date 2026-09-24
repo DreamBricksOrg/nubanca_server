@@ -17,14 +17,15 @@
     <header>
       <img
         id="logo"
-        src="{{ url_for('static', filename='images/logo_branco.png') }}"
+        src="{{ url_for('static', filename='img/logo_branco.png') }}"
         alt="Logo"
       />
     </header>
-    <div id="content">
-      
+    <div id="loading">
+      <div class="spinner"></div>
     </div>
-    <footer>
+    <div id="content"></div>
+    <footer id="footer_buttons">
       <button id="disapproved">
         <?xml version="1.0" encoding="UTF-8"?><svg
           width="36px"
@@ -62,6 +63,9 @@
         </svg>
       </button>
     </footer>
+    <script>
+      const BASE_URL = "{{ server_url }}";
+    </script>
     <script src="{{ url_for('static', filename='js/validacao.js') }}"></script>
   </body>
 </html>

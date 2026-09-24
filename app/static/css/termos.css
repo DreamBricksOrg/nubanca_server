@@ -44,4 +44,11 @@ button {
   left: 50%;
   transform: translateX(-50%);
   border-radius: 100px;
+  font-family: "Nu Sans Text", sans-serif;
+
+}
+
+
+button:active {
+  background-color: #CBA5FD;
 }

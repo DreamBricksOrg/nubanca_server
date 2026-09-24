@@ -29,6 +29,7 @@ let lastMouseX = 0;
 let lastMouseY = 0;
 
 coverImage.src = coverImagePath;
+const photoTakenPath = localStorage.getItem("imgData");
 photoTaken.src = photoTakenPath;
 
 let x = 0;
@@ -161,13 +162,24 @@ function saveImage() {
   // Draw Image 1 on top
   ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
 
-  // Download
-  const link = document.createElement("a");
+  outputCanvas.toBlob(async (blob) => {
+    const formData = new FormData();
 
-  link.download = "edited-image.png";
-  link.href = outputCanvas.toDataURL("image/png");
+    formData.append("image", blob, "edited-image.png");
 
-  link.click();
+    let resp = await fetch(BASE_URL + "/print", {
+      method: "POST",
+      body: formData,
+    });
+    if (!resp.ok) {
+      throw new Error("Erro na requisição: " + resp.status);
+    }
+
+    const dados = await resp.json();
+
+    localStorage.setItem("qrcodeImagePath", dados.page_url);
+    window.location.href = BASE_URL + "/qrcode";
+  }, "image/png");
 }
 
 //#region screen display
@@ -378,9 +390,7 @@ window.addEventListener("keydown", (e) => {
 });
 
 window.addEventListener("keyup", (e) => {
-
-  if (e.key !== "Shift")
-    return;
+  if (e.key !== "Shift") return;
 
   testPinch = false;
 

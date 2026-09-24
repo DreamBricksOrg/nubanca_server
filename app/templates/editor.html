@@ -13,7 +13,7 @@
     <header>
       <img
         id="logo"
-        src="{{ url_for('static', filename='images/logo_branco.png') }}"
+        src="{{ url_for('static', filename='img/logo_branco.png') }}"
         alt="Logo"
       />
     </header>
@@ -37,8 +37,8 @@
     </footer>
   </body>
   <script>
-    const coverImagePath = "{{ url_for('static', filename='images/contigo sem fundo.png') }}";
-    const photoTakenPath = "{{ url_for('static', filename='images/teste.jpg') }}";
+    const BASE_URL = "{{ server_url }}";
+    const coverImagePath = "{{ url_for('static', filename='img/contigo sem fundo.png') }}";
   </script>
   <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
 </html>
