@@ -11,3 +11,10 @@ def test_config_has_s3_settings_with_sane_defaults():
 
 def test_config_defaults_event_location_to_empty_string():
     assert Config.EVENT_LOCATION == ""
+
+
+def test_config_has_print_settings_with_sane_defaults():
+    assert Config.SUMATRA_PATH == "SumatraPDF.exe"
+    assert Config.PRINTER_NAME == ""
+    assert Config.PRINT_SETTINGS == "fit,portrait"
+    assert Config.PRINT_TIMEOUT == 60

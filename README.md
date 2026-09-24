@@ -20,7 +20,7 @@ storage/
 ### 1. Pré-requisitos
 
 - Python 3.12+
-- Windows (o passo de impressão via PowerShell, quando implementado, depende disso)
+- Windows, com o [SumatraPDF](https://www.sumatrapdfreader.org/) instalado (usado para imprimir a imagem final em `POST /print`)
 
 ### 2. Instalar dependências
 
@@ -47,6 +47,10 @@ AWS_REGION=us-east-1
 AWS_S3_BUCKET=                   # bucket onde back-covers/<arquivo> é salvo
 S3_PRESIGNED_URL_EXPIRES=86400   # validade (segundos) das URLs presigned usadas em /view
 EVENT_LOCATION=                  # opcional; prefixo de local para rodar múltiplas instâncias no mesmo bucket
+SUMATRA_PATH=SumatraPDF.exe      # caminho do executável do SumatraPDF (usado para imprimir em /print)
+PRINTER_NAME=                    # nome exato da impressora; vazio usa a impressora padrão do Windows
+PRINT_SETTINGS=fit,portrait      # flags passadas a -print-settings do SumatraPDF
+PRINT_TIMEOUT=60                 # tempo limite (segundos) para o comando de impressão
 ```
 
 `EVENT_LOCATION` é opcional e serve para rodar o mesmo bucket S3 compartilhado entre múltiplas instâncias do app em locais diferentes (ex: um evento em SP e outro no RJ simultaneamente) sem colidir. Quando definida (ex: `EVENT_LOCATION=sp`), as imagens finais vão para `back-covers/sp/<arquivo>` em vez de `back-covers/<arquivo>`; cada instância roda com seu próprio `.env` apontando o mesmo `AWS_S3_BUCKET` mas um `EVENT_LOCATION` diferente. Se deixada vazia (padrão), o comportamento é o mesmo de antes — sem prefixo de local.
@@ -124,10 +128,10 @@ Recebe a imagem final tratada (colagem feita pelo tablet) como upload `multipart
 
 | Status | Corpo | Quando |
 |---|---|---|
-| `200` | `{"success": true, "message": "...", "page_url": "http://localhost:5000/view/20260922_143201.jpg"}` | Arquivo salvo com sucesso. `page_url` aponta para a página de visualização/compartilhamento (ver `GET /view/<filename>`). |
+| `200` | `{"success": true, "message": "...", "page_url": "http://localhost:5000/view/20260922_143201.jpg"}` | Arquivo salvo com sucesso. `page_url` aponta para a página de visualização/compartilhamento (ver `GET /view/<filename>`). `message` indica se a impressão foi enviada com sucesso ou se falhou (o upload para o S3 acontece de qualquer forma). |
 | `400` | `{"success": false, "message": "..."}` | Nenhum arquivo enviado, ou extensão não permitida. |
 
-> **Nota:** o comando real de impressão via PowerShell ainda não foi implementado — depende da definição da impressora/driver A4. Ver `app/printing.py` para o stub e o comentário indicando o que substituir.
+> A impressão é feita via [SumatraPDF](https://www.sumatrapdfreader.org/) em modo retrato (`app/printing.py`), configurável pelas variáveis `SUMATRA_PATH`, `PRINTER_NAME`, `PRINT_SETTINGS` e `PRINT_TIMEOUT` (ver seção de variáveis de ambiente). Se a impressão falhar (impressora offline, SumatraPDF não encontrado, etc.), o erro é logado e a resposta ainda é `200`/`success: true` — a imagem final continua salva no S3 e acessível via `page_url`, apenas com `message` indicando a falha na impressão.
 
 Exemplo com `curl`:
 

@@ -14,3 +14,8 @@ class Config:
     AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
     S3_PRESIGNED_URL_EXPIRES = int(os.environ.get("S3_PRESIGNED_URL_EXPIRES", "86400"))
     EVENT_LOCATION = os.environ.get("EVENT_LOCATION", "")
+
+    SUMATRA_PATH = os.environ.get("SUMATRA_PATH", "SumatraPDF.exe")
+    PRINTER_NAME = os.environ.get("PRINTER_NAME", "")
+    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "fit,portrait")
+    PRINT_TIMEOUT = int(os.environ.get("PRINT_TIMEOUT", "60"))

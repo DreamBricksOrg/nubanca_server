@@ -95,7 +95,7 @@ def print_image_route():
         description: The final collage image (.jpg, .jpeg or .png).
     responses:
       200:
-        description: Image saved to back-covers/ (printing itself is stubbed).
+        description: Image saved to back-covers/ and sent to the printer.
         schema:
           type: object
           properties:
@@ -104,7 +104,7 @@ def print_image_route():
               example: true
             message:
               type: string
-              example: Imagem salva em back-covers; impressão ainda não implementada (stub)
+              example: Imagem salva em back-covers e enviada para impressão
             page_url:
               type: string
               example: http://localhost:5000/view/20260922_143201.jpg
@@ -128,16 +128,25 @@ def print_image_route():
         return jsonify({"success": False, "message": str(exc)}), 400
 
     try:
-        printing.print_image(temp_path)
+        try:
+            print_result = printing.print_image(temp_path)
+        except printing.PrintError as exc:
+            current_app.logger.error("Falha ao imprimir %s: %s", temp_path, exc)
+            print_result = {"printed": False, "message": str(exc)}
+
         filename = storage.build_unique_filename(temp_path.suffix)
         s3_storage.upload_file(temp_path, s3_storage.back_cover_key(filename))
     finally:
         temp_path.unlink(missing_ok=True)
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
+    if print_result["printed"]:
+        message = "Imagem salva em back-covers e enviada para impressão"
+    else:
+        message = f"Imagem salva em back-covers; falha ao imprimir ({print_result['message']})"
     return jsonify({
         "success": True,
-        "message": "Imagem salva em back-covers; impressão ainda não implementada (stub)",
+        "message": message,
         "page_url": f"{base_url}/view/{filename}",
     })
 
