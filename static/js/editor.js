@@ -16,10 +16,10 @@ const moveSpeed = 5;
 const ctx1 = canvas1.getContext("2d");
 const ctx2 = canvas2.getContext("2d");
 
-const img1 = new Image();
-const img2 = new Image();
+const coverImage = new Image();
+const photoTaken = new Image();
 
-let image2Height = 0;
+let photoTakenHeight = 0;
 let zoom = 1;
 let displayScale = 1;
 let moveInterval = null;
@@ -28,8 +28,8 @@ let virtualPointerId = "virtual";
 let lastMouseX = 0;
 let lastMouseY = 0;
 
-img1.src = img1Path;
-img2.src = img2Path;
+coverImage.src = coverImagePath;
+photoTaken.src = photoTakenPath;
 
 let x = 0;
 let y = 0;
@@ -49,57 +49,57 @@ function getDisplayScale() {
 
   const verticalSpace = window.innerHeight - 380; // space for arrows, zoom and footer
 
-  const scaleX = horizontalSpace / img1.width;
-  const scaleY = verticalSpace / img1.height;
+  const scaleX = horizontalSpace / coverImage.width;
+  const scaleY = verticalSpace / coverImage.height;
 
   return Math.min(scaleX, scaleY);
 }
 
 // IMAGE 1
-img1.onload = () => {
+coverImage.onload = () => {
   displayScale = getDisplayScale();
-  canvas1.width = img1.width * displayScale;
-  canvas1.height = img1.height * displayScale;
+  canvas1.width = coverImage.width * displayScale;
+  canvas1.height = coverImage.height * displayScale;
 
-  ctx1.drawImage(img1, 0, 0, canvas1.width, canvas1.height);
+  ctx1.drawImage(coverImage, 0, 0, canvas1.width, canvas1.height);
   setupEditor();
 };
 
 // IMAGE 2
-img2.onload = () => {
+photoTaken.onload = () => {
   displayScale = getDisplayScale();
 
-  canvas2.width = img1.width * displayScale;
-  canvas2.height = img1.height * displayScale;
+  canvas2.width = coverImage.width * displayScale;
+  canvas2.height = coverImage.height * displayScale;
 
-  const scale = canvas2.width / img2.width;
+  const scale = canvas2.width / photoTaken.width;
 
-  image2Height = img2.height * scale;
+  photoTakenHeight = photoTaken.height * scale;
 
   x = canvas2.width / 2;
   y = canvas2.height / 2;
 
-  drawImage2();
+  drawPhotoTaken();
   setupEditor();
 };
 
-function drawImage2() {
+function drawPhotoTaken() {
   ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
 
   const width = canvas2.width * zoom;
-  const height = image2Height * zoom;
+  const height = photoTakenHeight * zoom;
 
   ctx2.save();
 
   ctx2.translate(x, y);
 
-  ctx2.drawImage(img2, -width / 2, -height / 2, width, height);
+  ctx2.drawImage(photoTaken, -width / 2, -height / 2, width, height);
 
   ctx2.restore();
 }
 
 function setupEditor() {
-  if (!img1.complete || !img2.complete) return;
+  if (!coverImage.complete || !photoTaken.complete) return;
 
   const editor = document.getElementById("editor");
 
@@ -110,10 +110,10 @@ function setupEditor() {
 function startMoving(dx, dy) {
   if (moveInterval) return;
 
-  moveImage(dx, dy);
+  movePhotoTaken(dx, dy);
 
   moveInterval = setInterval(() => {
-    moveImage(dx, dy);
+    movePhotoTaken(dx, dy);
   }, 100);
 }
 
@@ -122,18 +122,18 @@ function stopMoving() {
   moveInterval = null;
 }
 
-function moveImage(dx, dy) {
+function movePhotoTaken(dx, dy) {
   x += dx;
   y += dy;
 
-  drawImage2();
+  drawPhotoTaken();
 }
 
 function saveImage() {
   const outputCanvas = document.createElement("canvas");
 
-  outputCanvas.width = img1.width;
-  outputCanvas.height = img1.height;
+  outputCanvas.width = coverImage.width;
+  outputCanvas.height = coverImage.height;
 
   const ctx = outputCanvas.getContext("2d");
 
@@ -142,14 +142,14 @@ function saveImage() {
   const originalY = y / displayScale;
 
   const originalWidth = (canvas2.width * zoom) / displayScale;
-  const originalHeight = (image2Height * zoom) / displayScale;
+  const originalHeight = (photoTakenHeight * zoom) / displayScale;
 
   ctx.save();
 
   ctx.translate(originalX, originalY);
 
   ctx.drawImage(
-    img2,
+    photoTaken,
     -originalWidth / 2,
     -originalHeight / 2,
     originalWidth,
@@ -159,7 +159,7 @@ function saveImage() {
   ctx.restore();
 
   // Draw Image 1 on top
-  ctx.drawImage(img1, 0, 0, img1.width, img1.height);
+  ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
 
   // Download
   const link = document.createElement("a");
@@ -172,23 +172,23 @@ function saveImage() {
 
 //#region screen display
 window.addEventListener("resize", () => {
-  if (!img1.complete || !img2.complete) return;
+  if (!coverImage.complete || !photoTaken.complete) return;
 
   displayScale = getDisplayScale();
 
-  canvas1.width = img1.width * displayScale;
-  canvas1.height = img1.height * displayScale;
+  canvas1.width = coverImage.width * displayScale;
+  canvas1.height = coverImage.height * displayScale;
 
-  ctx1.drawImage(img1, 0, 0, canvas1.width, canvas1.height);
+  ctx1.drawImage(coverImage, 0, 0, canvas1.width, canvas1.height);
 
   canvas2.width = canvas1.width;
   canvas2.height = canvas1.height;
 
-  const scale = canvas2.width / img2.width;
+  const scale = canvas2.width / photoTaken.width;
 
-  image2Height = img2.height * scale;
+  photoTakenHeight = photoTaken.height * scale;
 
-  drawImage2();
+  drawPhotoTaken();
   setupEditor();
 });
 //#endregion
@@ -213,14 +213,14 @@ input_right.addEventListener("mousedown", () => {
 
 input_zoom_in.addEventListener("click", () => {
   zoom += 0.1;
-  drawImage2();
+  drawPhotoTaken();
 });
 
 window.addEventListener("mouseup", stopMoving);
 
 input_zoom_out.addEventListener("click", () => {
   zoom = Math.max(0.1, zoom - 0.1);
-  drawImage2();
+  drawPhotoTaken();
 });
 
 saveImage_btn.addEventListener("click", () => {
@@ -274,7 +274,7 @@ editor.addEventListener("pointermove", (e) => {
     x = startX + dx;
     y = startY + dy;
 
-    drawImage2();
+    drawPhotoTaken();
     return;
   }
   if (pointers.size === 2) {
@@ -288,7 +288,7 @@ editor.addEventListener("pointermove", (e) => {
 
     zoom = Math.max(0.1, pinchStartZoom * ratio);
 
-    drawImage2();
+    drawPhotoTaken();
   }
 });
 
