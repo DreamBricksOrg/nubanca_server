@@ -16,5 +16,5 @@ def test_config_defaults_event_location_to_empty_string():
 def test_config_has_print_settings_with_sane_defaults():
     assert Config.SUMATRA_PATH == "SumatraPDF.exe"
     assert Config.PRINTER_NAME == ""
-    assert Config.PRINT_SETTINGS == "fit,portrait"
+    assert Config.PRINT_SETTINGS == "fit,portrait,paper=A4"
     assert Config.PRINT_TIMEOUT == 60

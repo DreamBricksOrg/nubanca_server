@@ -49,7 +49,7 @@ S3_PRESIGNED_URL_EXPIRES=86400   # validade (segundos) das URLs presigned usadas
 EVENT_LOCATION=                  # opcional; prefixo de local para rodar múltiplas instâncias no mesmo bucket
 SUMATRA_PATH=SumatraPDF.exe      # caminho do executável do SumatraPDF (usado para imprimir em /print)
 PRINTER_NAME=                    # nome exato da impressora; vazio usa a impressora padrão do Windows
-PRINT_SETTINGS=fit,portrait      # flags passadas a -print-settings do SumatraPDF
+PRINT_SETTINGS=fit,portrait,paper=A4   # flags passadas a -print-settings do SumatraPDF; paper=A4 evita que o driver use outro tamanho padrão (ex: Letter) e corte a imagem
 PRINT_TIMEOUT=60                 # tempo limite (segundos) para o comando de impressão
 ```
 

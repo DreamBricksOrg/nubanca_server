@@ -17,5 +17,5 @@ class Config:
 
     SUMATRA_PATH = os.environ.get("SUMATRA_PATH", "SumatraPDF.exe")
     PRINTER_NAME = os.environ.get("PRINTER_NAME", "")
-    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "fit,portrait")
+    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "fit,portrait,paper=A4")
     PRINT_TIMEOUT = int(os.environ.get("PRINT_TIMEOUT", "60"))

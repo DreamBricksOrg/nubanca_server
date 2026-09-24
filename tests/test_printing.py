@@ -28,7 +28,7 @@ def test_print_image_invokes_sumatra_in_portrait_mode(app, monkeypatch, tmp_path
     assert args[0] == "SumatraPDF.exe"
     assert "-print-to-default" in args
     assert "-print-settings" in args
-    assert args[args.index("-print-settings") + 1] == "fit,portrait"
+    assert args[args.index("-print-settings") + 1] == "fit,portrait,paper=A4"
     assert "portrait" in args[args.index("-print-settings") + 1]
     assert "-silent" in args
     assert "-exit-when-done" in args
