@@ -49,8 +49,10 @@ S3_PRESIGNED_URL_EXPIRES=86400   # validade (segundos) das URLs presigned usadas
 EVENT_LOCATION=                  # opcional; prefixo de local para rodar múltiplas instâncias no mesmo bucket
 SUMATRA_PATH=SumatraPDF.exe      # caminho do executável do SumatraPDF (usado para imprimir em /print)
 PRINTER_NAME=                    # nome exato da impressora; vazio usa a impressora padrão do Windows
-PRINT_SETTINGS=fit,portrait,paper=A4   # flags passadas a -print-settings do SumatraPDF; paper=A4 evita que o driver use outro tamanho padrão (ex: Letter) e corte a imagem
+PRINT_SETTINGS=noscale,paper=A4,center   # flags passadas a -print-settings do SumatraPDF (ver nota abaixo sobre por que é noscale)
 PRINT_TIMEOUT=60                 # tempo limite (segundos) para o comando de impressão
+PRINT_DPI=300                    # resolução (DPI) usada para compor a imagem no canvas A4 antes de imprimir
+PRINT_MARGIN_MM=6                # margem de segurança (mm) ao redor da imagem, para não cortar por causa da margem não-imprimível da impressora
 ```
 
 `EVENT_LOCATION` é opcional e serve para rodar o mesmo bucket S3 compartilhado entre múltiplas instâncias do app em locais diferentes (ex: um evento em SP e outro no RJ simultaneamente) sem colidir. Quando definida (ex: `EVENT_LOCATION=sp`), as imagens finais vão para `back-covers/sp/<arquivo>` em vez de `back-covers/<arquivo>`; cada instância roda com seu próprio `.env` apontando o mesmo `AWS_S3_BUCKET` mas um `EVENT_LOCATION` diferente. Se deixada vazia (padrão), o comportamento é o mesmo de antes — sem prefixo de local.
@@ -131,7 +133,9 @@ Recebe a imagem final tratada (colagem feita pelo tablet) como upload `multipart
 | `200` | `{"success": true, "message": "...", "page_url": "http://localhost:5000/view/20260922_143201.jpg"}` | Arquivo salvo com sucesso. `page_url` aponta para a página de visualização/compartilhamento (ver `GET /view/<filename>`). `message` indica se a impressão foi enviada com sucesso ou se falhou (o upload para o S3 acontece de qualquer forma). |
 | `400` | `{"success": false, "message": "..."}` | Nenhum arquivo enviado, ou extensão não permitida. |
 
-> A impressão é feita via [SumatraPDF](https://www.sumatrapdfreader.org/) em modo retrato (`app/printing.py`), configurável pelas variáveis `SUMATRA_PATH`, `PRINTER_NAME`, `PRINT_SETTINGS` e `PRINT_TIMEOUT` (ver seção de variáveis de ambiente). Se a impressão falhar (impressora offline, SumatraPDF não encontrado, etc.), o erro é logado e a resposta ainda é `200`/`success: true` — a imagem final continua salva no S3 e acessível via `page_url`, apenas com `message` indicando a falha na impressão.
+> A impressão é feita via [SumatraPDF](https://www.sumatrapdfreader.org/) em modo retrato (`app/printing.py`), configurável pelas variáveis `SUMATRA_PATH`, `PRINTER_NAME`, `PRINT_SETTINGS`, `PRINT_TIMEOUT`, `PRINT_DPI` e `PRINT_MARGIN_MM` (ver seção de variáveis de ambiente). Se a impressão falhar (impressora offline, SumatraPDF não encontrado, etc.), o erro é logado e a resposta ainda é `200`/`success: true` — a imagem final continua salva no S3 e acessível via `page_url`, apenas com `message` indicando a falha na impressão.
+>
+> Antes de mandar para o SumatraPDF, a imagem é recomposta num canvas A4 (`PRINT_DPI`, padrão 300 DPI) com uma margem de segurança em branco ao redor (`PRINT_MARGIN_MM`, padrão 6mm) e impressa a 100% (`noscale`). Isso é proposital: o modo `fit`/`shrink` do próprio SumatraPDF escala a imagem para a "área imprimível" que o driver da impressora reporta, o que na prática variou entre drivers e cortou imagens com conteúdo até a borda (full-bleed) contra a margem física não-imprimível do papel. Compor a imagem nós mesmos, num tamanho A4 exato e com margem conhecida, elimina essa adivinhação.
 
 Exemplo com `curl`:
 

@@ -17,5 +17,7 @@ class Config:
 
     SUMATRA_PATH = os.environ.get("SUMATRA_PATH", "SumatraPDF.exe")
     PRINTER_NAME = os.environ.get("PRINTER_NAME", "")
-    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "fit,portrait,paper=A4")
+    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "noscale,paper=A4,center")
     PRINT_TIMEOUT = int(os.environ.get("PRINT_TIMEOUT", "60"))
+    PRINT_DPI = int(os.environ.get("PRINT_DPI", "300"))
+    PRINT_MARGIN_MM = float(os.environ.get("PRINT_MARGIN_MM", "6"))
