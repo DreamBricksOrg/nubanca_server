@@ -18,6 +18,7 @@ def app(tmp_path):
         AWS_REGION = "us-east-1"
         AWS_S3_BUCKET = TEST_S3_BUCKET
         S3_PRESIGNED_URL_EXPIRES = 3600
+        IMAGEMAGICK_ENABLED = False
 
     with mock_aws():
         s3 = boto3.client("s3", region_name=TestConfig.AWS_REGION)

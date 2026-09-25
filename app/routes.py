@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
 
-from . import printing, s3_storage, storage
+from . import imagemagick, printing, s3_storage, storage
 
 bp = Blueprint("main", __name__)
 
@@ -36,6 +36,11 @@ def get_image():
     dest = storage.promote_latest_capture(root / "captures", root / "photos")
     if dest is None:
         return jsonify({"success": False, "message": "Nenhuma imagem nova disponível"}), 404
+
+    try:
+        imagemagick.apply_treatment(dest)
+    except imagemagick.TreatmentError as exc:
+        current_app.logger.error("Falha ao tratar imagem %s: %s", dest, exc)
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
     image_url = f"{base_url}/files/photos/{dest.name}"

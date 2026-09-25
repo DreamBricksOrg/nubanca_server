@@ -2,6 +2,8 @@ import io
 
 import boto3
 
+from app import imagemagick
+
 
 def test_get_image_returns_404_when_no_new_capture(client):
     response = client.get("/image")
@@ -237,3 +239,25 @@ def test_view_photo_uses_event_location_prefix_when_configured(client, app, monk
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "back-covers/rj/20260922_143201.jpg" in body
+
+
+def test_get_image_calls_imagemagick_treatment_and_survives_failure(client, app, monkeypatch):
+    captures = app.config["STORAGE_ROOT"] / "captures"
+    (captures / "DSC0001.jpg").write_bytes(b"x")
+
+    calls = []
+
+    def fake_apply_treatment(path):
+        calls.append(path)
+        raise imagemagick.TreatmentError("boom")
+
+    app.config["IMAGEMAGICK_ENABLED"] = True
+    monkeypatch.setattr("app.routes.imagemagick.apply_treatment", fake_apply_treatment)
+
+    response = client.get("/image")
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert calls[0].name == "DSC0001.jpg" or calls[0].exists()
+    data = response.get_json()
+    assert data["image_url"].startswith("http://testserver/files/photos/")
