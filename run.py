@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 from app import create_app  # noqa: E402 (must load .env before Config is evaluated)
 

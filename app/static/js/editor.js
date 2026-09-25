@@ -1,16 +1,8 @@
 const canvas1 = document.getElementById("canvas1");
 const canvas2 = document.getElementById("canvas2");
 
-const input_up = document.getElementById("input_up");
-const input_down = document.getElementById("input_bottom");
-const input_left = document.getElementById("input_left");
-const input_right = document.getElementById("input_right");
-
-const input_zoom_in = document.getElementById("zoom_in");
-const input_zoom_out = document.getElementById("zoom_out");
-
 const saveImage_btn = document.getElementById("saveImage");
-
+let isSaving = false;
 const moveSpeed = 5;
 
 const ctx1 = canvas1.getContext("2d");
@@ -18,7 +10,7 @@ const ctx2 = canvas2.getContext("2d");
 
 const coverImage = new Image();
 const photoTaken = new Image();
-
+document.getElementById("loading").style.display = "none";
 let photoTakenHeight = 0;
 let zoom = 1;
 let displayScale = 1;
@@ -131,55 +123,67 @@ function movePhotoTaken(dx, dy) {
 }
 
 function saveImage() {
-  const outputCanvas = document.createElement("canvas");
+  try {
+    if(isSaving) return;
 
-  outputCanvas.width = coverImage.width;
-  outputCanvas.height = coverImage.height;
+    isSaving = true;
+    saveImage_btn.disabled = true;
+    document.getElementById("loading").style.display = "flex";
 
-  const ctx = outputCanvas.getContext("2d");
+    const outputCanvas = document.createElement("canvas");
 
-  // Draw Image 2
-  const originalX = x / displayScale;
-  const originalY = y / displayScale;
+    outputCanvas.width = coverImage.width;
+    outputCanvas.height = coverImage.height;
 
-  const originalWidth = (canvas2.width * zoom) / displayScale;
-  const originalHeight = (photoTakenHeight * zoom) / displayScale;
+    const ctx = outputCanvas.getContext("2d");
 
-  ctx.save();
+    // Draw Image 2
+    const originalX = x / displayScale;
+    const originalY = y / displayScale;
 
-  ctx.translate(originalX, originalY);
+    const originalWidth = (canvas2.width * zoom) / displayScale;
+    const originalHeight = (photoTakenHeight * zoom) / displayScale;
 
-  ctx.drawImage(
-    photoTaken,
-    -originalWidth / 2,
-    -originalHeight / 2,
-    originalWidth,
-    originalHeight,
-  );
+    ctx.save();
 
-  ctx.restore();
+    ctx.translate(originalX, originalY);
 
-  // Draw Image 1 on top
-  ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
+    ctx.drawImage(
+      photoTaken,
+      -originalWidth / 2,
+      -originalHeight / 2,
+      originalWidth,
+      originalHeight,
+    );
 
-  outputCanvas.toBlob(async (blob) => {
-    const formData = new FormData();
+    ctx.restore();
 
-    formData.append("image", blob, "edited-image.png");
+    // Draw Image 1 on top
+    ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
 
-    let resp = await fetch(BASE_URL + "/print", {
-      method: "POST",
-      body: formData,
-    });
-    if (!resp.ok) {
-      throw new Error("Erro na requisição: " + resp.status);
-    }
+    outputCanvas.toBlob(async (blob) => {
+      const formData = new FormData();
 
-    const dados = await resp.json();
+      formData.append("image", blob, "edited-image.png");
 
-    localStorage.setItem("qrcodeImagePath", dados.page_url);
-    window.location.href = BASE_URL + "/qrcode";
-  }, "image/png");
+      let resp = await fetch(BASE_URL + "/print", {
+        method: "POST",
+        body: formData,
+      });
+      if (!resp.ok) {
+        throw new Error("Erro na requisição: " + resp.status);
+      }
+
+      const dados = await resp.json();
+
+      localStorage.setItem("qrcodeImagePath", dados.page_url);
+      window.location.href = BASE_URL + "/qrcode";
+    }, "image/png");
+  } catch {
+    isSaving = false;
+    saveImage_btn.disabled = false;
+    document.getElementById("loading").style.display = "none";
+  }
 }
 
 //#region screen display
@@ -205,40 +209,14 @@ window.addEventListener("resize", () => {
 });
 //#endregion
 
-//#region buttons
 
-input_up.addEventListener("mousedown", () => {
-  startMoving(0, -moveSpeed);
-});
-
-input_down.addEventListener("mousedown", () => {
-  startMoving(0, moveSpeed);
-});
-
-input_left.addEventListener("mousedown", () => {
-  startMoving(-moveSpeed, 0);
-});
-
-input_right.addEventListener("mousedown", () => {
-  startMoving(moveSpeed, 0);
-});
-
-input_zoom_in.addEventListener("click", () => {
-  zoom += 0.1;
-  drawPhotoTaken();
-});
 
 window.addEventListener("mouseup", stopMoving);
-
-input_zoom_out.addEventListener("click", () => {
-  zoom = Math.max(0.1, zoom - 0.1);
-  drawPhotoTaken();
-});
 
 saveImage_btn.addEventListener("click", () => {
   saveImage();
 });
-//#endregion
+
 
 //#region pointer
 

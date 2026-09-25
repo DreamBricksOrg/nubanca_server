@@ -6,6 +6,13 @@
   --light-background-color: #8d0de3;
   --light-button-color: #ffffff;
   --light-button-text-color: #000000;
+
+  --purple: #8d0de3;
+  --purple-100: #ecdfff;
+  --sand: #f3efe6;
+  --black: #000000;
+  --white: #ffffff;
+  --offwhite: #f4f4f4;
 }
 
 @font-face {
@@ -23,10 +30,11 @@ html,
 body {
   height: 100% !important;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   overflow-y: auto;
   font-family: "Nu Sans Text", sans-serif;
+  align-items: center;
 }
 
 #logo {
@@ -47,8 +55,67 @@ footer {
   height: 80px;
 }
 
-button {
+/* button {
   font-size: 20px;
   border: 0px;
   height: 75px;
+} */
+
+#loading {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+
+  border: 5px solid #ddd;
+  border-top: 5px solid #8d0de3;
+  border-radius: 50%;
+
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  border-radius: 999px;
+  text-align: center;
+  font-family: "Nu Sans Text", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+
+.btn:hover {
+  transform: scale(1.05);
+}
+
+.btn-primary {
+  background: var(--white);
+  color: var(--purple);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--white);
+  border: 1.5px solid var(--white);
 }

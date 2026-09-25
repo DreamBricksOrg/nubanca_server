@@ -26,36 +26,36 @@
     </div>
     <div id="content"></div>
     <footer id="footer_buttons">
-      <button id="disapproved">
+      <button id="disapproved" class="btn btn-secondary">
         <?xml version="1.0" encoding="UTF-8"?><svg
           width="36px"
           height="36px"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          color="#000000"
+          color="#ffffff"
         >
           <path
             d="M6.75827 17.2426L12.0009 12M17.2435 6.75736L12.0009 12M12.0009 12L6.75827 6.75736M12.0009 12L17.2435 17.2426"
-            stroke="#000000"
+            stroke="#ffffff"
             stroke-width="1.5"
             stroke-linecap="round"
             stroke-linejoin="round"
           ></path>
         </svg>
       </button>
-      <button id="approved">
+      <button id="approved" class="btn btn-primary">
         <?xml version="1.0" encoding="UTF-8"?><svg
           width="36px"
           height="36px"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          color="#000000"
+          color="#8d0de3"
         >
           <path
             d="M5 13L9 17L19 7"
-            stroke="#000000"
+            stroke="#8d0de3"
             stroke-width="1.5"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -65,7 +65,9 @@
     </footer>
     <script>
       const BASE_URL = "{{ server_url }}";
+      const timer_pooling = parseInt("{{ timer_pooling }}");
     </script>
     <script src="{{ url_for('static', filename='js/validacao.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logo_back.js') }}"></script>
   </body>
 </html>

@@ -20,62 +20,14 @@ body {
 }
 
 #content > img {
-  width: 80%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  border-radius: 20px;
 }
 
-button {
-  background-color: var(--light-button-color);
-  border-radius: 30px;
-  corner-shape: squircle;
-  width: 100px;
-}
 #footer_buttons {
   display: none;
-}
-
-#disapproved {
-  margin-right: 50px;
-  background-color: #e9a6a7;
-}
-#approved {
-  background-color: #a7d296;
-}
-
-#disapproved:active {
-  background-color: #da9ac7;
-}
-#approved:active {
-  background-color: #85d1bd;
-}
-
-#loading {
-  position: fixed;
-  inset: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgba(255, 255, 255, 0.2);
-  z-index: 9999;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-
-  border: 5px solid #ddd;
-  border-top: 5px solid #8d0de3;
-  border-radius: 50%;
-
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  gap: 50px;
+  width: 40%;
 }

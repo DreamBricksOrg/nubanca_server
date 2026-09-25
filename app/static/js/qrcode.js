@@ -12,11 +12,7 @@ var qrcode = new QRCode(qr, {
 
 
 function retornarTermos(){
-    window.location.href = BASE_URL + "/termos";
+    window.location.href = BASE_URL + "/";
 }
 
-setTimeout(retornarTermos, 30000)
-
-back_button.addEventListener("click", async () => {
-  retornarTermos();
-});
+setTimeout(retornarTermos, TIMEOUT * 1000);

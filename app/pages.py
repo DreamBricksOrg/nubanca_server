@@ -15,8 +15,8 @@ def open_terms():
 
 @bp.get("/qrcode")
 def open_qrcode():
-    return render_template('qrcode.html', name="qrcode", server_url=current_app.config.get("BASE_URL"))
+    return render_template('qrcode.html', name="qrcode", server_url=current_app.config.get("BASE_URL"), timeout_screen=current_app.config.get("TIMEOUT_QRCODE"))
 
 @bp.get("/validacao")
 def open_validacao():
-    return render_template('validacao.html', name="validacao", server_url=current_app.config.get("BASE_URL"))
+    return render_template('validacao.html', name="validacao", server_url=current_app.config.get("BASE_URL"), timer_pooling=current_app.config.get("TIMER_POOLING"))

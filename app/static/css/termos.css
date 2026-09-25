@@ -2,17 +2,33 @@
 
 body {
   background-color: var(--dark-background-color);
+
+  min-height: 100dvh;
+
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
 }
 
+header {
+  flex: 0 0 10dvh;
+}
 #content {
-  color: white;
-  margin: 50px;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
+
+  width: 100%;
+  margin: 0;
+  padding: 50px;
+
+  color: white;
   font-size: 20px;
+
   overflow-y: auto;
+  overflow-x: hidden;
+
+  box-sizing: border-box;
 }
 
 #logo {
@@ -33,22 +49,15 @@ p {
   font-size: min(4vw, 20px);
 }
 
-button {
-  background-color: var(--dark-button-color);
-  color: var(--dark-button-text-color);
-  font-size: 20px;
-  border: 0px;
-  position: absolute;
-  width: min(60vw, 600px);
-  height: 75px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 100px;
-  font-family: "Nu Sans Text", sans-serif;
+footer {
+    flex: 0 0 auto;
 
-}
+    width: 40%;
+    display: flex;
+    justify-content: center;
 
-
-button:active {
-  background-color: #CBA5FD;
+    padding: 10px 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    margin-bottom: 10px;
+    box-sizing: border-box;
 }

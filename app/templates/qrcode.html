@@ -22,13 +22,12 @@
       <span>Leve ela com você!</span>
       <div id="qrcode"></div>
     </div>
-    <footer>
-      <button id="back_button">Voltar</button>
-    </footer>
     <script>
       const BASE_URL = "{{ server_url }}";
+      const TIMEOUT = parseInt("{{ timeout_screen }}");
     </script>
     <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/qrcode.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/logo_back.js') }}"></script>
   </body>
 </html>

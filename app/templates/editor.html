@@ -17,28 +17,24 @@
         alt="Logo"
       />
     </header>
-    <button id="input_up">↑</button>
+    <div id="loading">
+      <div class="spinner"></div>
+    </div>
     <div id="middle">
-      <button id="input_left">←</button>
       <div id="editor">
         <canvas id="canvas2"></canvas>
         <canvas id="canvas1"></canvas>
       </div>
-      <button id="input_right">→</button>
     </div>
-    <button id="input_bottom">↓</button>
-    <div id="zoom_container">
-      <button id="zoom_in">+</button>
-      <button id="zoom_out">-</button>
-    </div>
-
     <footer>
-      <button id="saveImage">Salvar</button>
+      <button id="saveImage" class="btn btn-primary">Salvar</button>
     </footer>
   </body>
   <script>
     const BASE_URL = "{{ server_url }}";
-    const coverImagePath = "{{ url_for('static', filename='img/contigo sem fundo.png') }}";
+    const coverImagePath =
+      "{{ url_for('static', filename='img/contigo sem fundo.png') }}";
   </script>
   <script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/logo_back.js') }}"></script>
 </html>

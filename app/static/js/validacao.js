@@ -16,11 +16,11 @@ async function obterFotoMaisRecente() {
     img.classList.add("img_captured");
     img.src = dados.image_url;
     content.appendChild(img);
-    footer.style.display = "block";
+    footer.style.display = "flex";
     document.getElementById("loading").style.display = "none";
   } catch (error) {
     console.log(error);
-    setTimeout(obterFotoMaisRecente, 15000);
+    setTimeout(obterFotoMaisRecente, timer_pooling * 1000);
   }
 }
 
@@ -39,7 +39,7 @@ async function descartar() {
     console.log(dados);
     footer.style.display = "none";
     document.getElementById("loading").style.display = "flex";
-    setTimeout(obterFotoMaisRecente, 15000);
+    setTimeout(obterFotoMaisRecente, timer_pooling);
   } catch (error) {
     console.log(error);
   }

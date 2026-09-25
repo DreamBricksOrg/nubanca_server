@@ -27,3 +27,7 @@ class Config:
     IMAGEMAGICK_PATH = os.environ.get("IMAGEMAGICK_PATH", "magick")
     IMAGEMAGICK_ARGS = os.environ.get("IMAGEMAGICK_ARGS", "")
     IMAGEMAGICK_TIMEOUT = int(os.environ.get("IMAGEMAGICK_TIMEOUT", "60"))
+
+
+    TIMEOUT_QRCODE = os.environ.get("TIMEOUT_QRCODE", "30")
+    TIMER_POOLING = os.environ.get("TIMER_POOLING", "5")
