@@ -73,6 +73,20 @@ def test_print_image_composes_onto_a4_canvas_and_prints_with_noscale(app, monkey
     assert not printed_path.exists()  # composed print-only file is cleaned up after printing
 
 
+def test_print_image_skips_printing_when_disabled(app, monkeypatch, tmp_path):
+    source = _make_image(tmp_path / "cover.jpg")
+
+    calls = []
+    monkeypatch.setattr(subprocess, "run", lambda args, **kwargs: calls.append(args) or subprocess.CompletedProcess(args, 0))
+    app.config["PRINT_ENABLED"] = False
+
+    with app.app_context():
+        result = print_image(source)
+
+    assert result == {"printed": False, "message": "Impressão desabilitada"}
+    assert calls == []
+
+
 def test_print_image_uses_configured_printer_name(app, monkeypatch, tmp_path):
     source = _make_image(tmp_path / "cover.jpg")
 

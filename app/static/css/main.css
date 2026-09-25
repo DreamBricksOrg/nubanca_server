@@ -25,7 +25,7 @@ body {
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  overflow: hidden;
+  overflow-y: auto;
   font-family: "Nu Sans Text", sans-serif;
 }
 

@@ -64,6 +64,10 @@ def print_image(path: Path) -> dict:
     so the physical printout always matches exactly what was composed.
     """
     config = current_app.config
+    if not config.get("PRINT_ENABLED", True):
+        logger.info("Impressão desabilitada via PRINT_ENABLED; ignorando: %s", path)
+        return {"printed": False, "message": "Impressão desabilitada"}
+
     sumatra_path = config["SUMATRA_PATH"]
     printer_name = config.get("PRINTER_NAME") or ""
     print_settings = config.get("PRINT_SETTINGS") or "noscale,paper=A4,center"
