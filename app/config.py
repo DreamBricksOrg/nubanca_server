@@ -22,3 +22,8 @@ class Config:
     PRINT_TIMEOUT = int(os.environ.get("PRINT_TIMEOUT", "60"))
     PRINT_DPI = int(os.environ.get("PRINT_DPI", "300"))
     PRINT_MARGIN_MM = float(os.environ.get("PRINT_MARGIN_MM", "6"))
+
+    IMAGEMAGICK_ENABLED = os.environ.get("IMAGEMAGICK_ENABLED", "true").strip().lower() not in ("false", "0", "")
+    IMAGEMAGICK_PATH = os.environ.get("IMAGEMAGICK_PATH", "magick")
+    IMAGEMAGICK_ARGS = os.environ.get("IMAGEMAGICK_ARGS", "")
+    IMAGEMAGICK_TIMEOUT = int(os.environ.get("IMAGEMAGICK_TIMEOUT", "60"))

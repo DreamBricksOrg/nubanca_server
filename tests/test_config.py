@@ -21,3 +21,10 @@ def test_config_has_print_settings_with_sane_defaults():
     assert Config.PRINT_TIMEOUT == 60
     assert Config.PRINT_DPI == 300
     assert Config.PRINT_MARGIN_MM == 6
+
+
+def test_config_has_imagemagick_settings_with_sane_defaults():
+    assert Config.IMAGEMAGICK_ENABLED is True
+    assert Config.IMAGEMAGICK_PATH == "magick"
+    assert Config.IMAGEMAGICK_ARGS == ""
+    assert Config.IMAGEMAGICK_TIMEOUT == 60
