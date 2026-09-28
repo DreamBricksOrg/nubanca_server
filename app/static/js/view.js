@@ -114,10 +114,18 @@
     maybeReveal();
   });
 
+  function notifyShare() {
+    try {
+      fetch(window.location.pathname + "/share", { method: "POST", keepalive: true });
+    } catch (e) {}
+  }
+
   var shareBtn = document.getElementById("share-btn");
   shareBtn.addEventListener("click", function () {
     var imageUrl = photo.dataset.src;
     var pageUrl = window.location.href;
+
+    notifyShare();
 
     function shareUrlFallback() {
       if (navigator.share) {

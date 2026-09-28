@@ -31,3 +31,12 @@ class Config:
 
     TIMEOUT_QRCODE = os.environ.get("TIMEOUT_QRCODE", "30")
     TIMER_POOLING = os.environ.get("TIMER_POOLING", "5")
+
+    LOGCENTER_ENABLED = os.environ.get("LOGCENTER_ENABLED", "true").strip().lower() not in ("false", "0", "")
+    LOGCENTER_BASE_URL = os.environ.get("LOGCENTER_BASE_URL", "")
+    LOGCENTER_PROJECT_ID = os.environ.get("LOGCENTER_PROJECT_ID", "")
+    LOGCENTER_API_KEY = os.environ.get("LOGCENTER_API_KEY")
+    LOGCENTER_TIMEOUT_S = float(os.environ.get("LOGCENTER_TIMEOUT_S", "10"))
+    LOGCENTER_SPOOL_DIR = Path(os.environ.get("LOGCENTER_SPOOL_DIR", ".logcenter"))
+    LOGCENTER_FLUSH_INTERVAL_S = float(os.environ.get("LOGCENTER_FLUSH_INTERVAL_S", "10"))
+    LOGCENTER_AUTO_FLUSH = os.environ.get("LOGCENTER_AUTO_FLUSH", "true").strip().lower() not in ("false", "0", "")

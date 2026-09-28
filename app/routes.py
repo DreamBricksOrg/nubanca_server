@@ -1,8 +1,20 @@
-from flask import Blueprint, abort, current_app, jsonify, render_template, request, send_from_directory
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_from_directory, url_for
 
 from . import imagemagick, printing, s3_storage, storage
+from .logcenter import log_event
 
 bp = Blueprint("main", __name__)
+
+
+def device_info():
+    """Dados do aparelho que fez a requisição, para o campo "data" dos logs."""
+    ua = request.user_agent
+    return {
+        "user_agent": ua.string,
+        "browser": ua.browser,
+        "platform": ua.platform,
+        "ip": request.remote_addr,
+    }
 
 
 @bp.get("/image")
@@ -40,7 +52,7 @@ def get_image():
     try:
         imagemagick.apply_treatment(dest)
     except imagemagick.TreatmentError as exc:
-        current_app.logger.error("Falha ao tratar imagem %s: %s", dest, exc)
+        log_event("ERROR", "tratamento_imagem_falhou", data={"file": dest.name, "error": str(exc)})
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
     image_url = f"{base_url}/files/photos/{dest.name}"
@@ -80,7 +92,9 @@ def discard_image():
     root = current_app.config["STORAGE_ROOT"]
     dest = storage.discard_latest_photo(root / "photos", root / "discards")
     if dest is None:
+        log_event("DEBUG", "descartar_imagem_chamada", status=404)
         return jsonify({"success": False, "message": "Nenhuma foto para descartar"}), 404
+    log_event("DEBUG", "descartar_imagem_chamada", status=200)
     return jsonify({"success": True, "message": "Foto descartada"})
 
 
@@ -130,13 +144,14 @@ def print_image_route():
     try:
         temp_path = storage.save_uploaded_image_to_tempfile(file_storage)
     except ValueError as exc:
+        log_event("DEBUG", "imprimir_imagem_chamada", status=400)
         return jsonify({"success": False, "message": str(exc)}), 400
 
     try:
         try:
             print_result = printing.print_image(temp_path)
         except printing.PrintError as exc:
-            current_app.logger.error("Falha ao imprimir %s: %s", temp_path, exc)
+            log_event("ERROR", "imprimir_imagem_falhou", data={"file": temp_path.name, "error": str(exc)})
             print_result = {"printed": False, "message": str(exc)}
 
         filename = storage.build_unique_filename(temp_path.suffix)
@@ -147,8 +162,10 @@ def print_image_route():
     base_url = current_app.config["BASE_URL"].rstrip("/")
     if print_result["printed"]:
         message = "Imagem salva em back-covers e enviada para impressão"
+        log_event("INFO", "imprimir_imagem_sucesso", data={"file": filename}, status=200)
     else:
         message = f"Imagem salva em back-covers; falha ao imprimir ({print_result['message']})"
+    log_event("DEBUG", "imprimir_imagem_chamada", status=200)
     return jsonify({
         "success": True,
         "message": message,
@@ -181,8 +198,57 @@ def view_photo(filename):
 
     expires_in = current_app.config["S3_PRESIGNED_URL_EXPIRES"]
     image_url = s3_storage.generate_presigned_url(key, filename, expires_in)
-    download_url = s3_storage.generate_presigned_url(key, filename, expires_in, download=True)
+    download_url = url_for("main.download_photo", filename=filename)
+
+    log_event("INFO", "visualizar_foto_acessada", data={"filename": filename, **device_info()}, status=200)
     return render_template("view.html", filename=filename, image_url=image_url, download_url=download_url)
+
+
+@bp.post("/view/<filename>/share")
+def share_photo(filename):
+    """Log the share action triggered from the /view page.
+    ---
+    tags:
+      - print
+    parameters:
+      - name: filename
+        in: path
+        type: string
+        required: true
+    responses:
+      204:
+        description: Share event logged.
+    """
+    log_event("INFO", "compartilhar_imagem", data={"filename": filename, **device_info()}, status=204)
+    return "", 204
+
+
+@bp.get("/view/<filename>/download")
+def download_photo(filename):
+    """Log the download and redirect to a presigned S3 download URL.
+    ---
+    tags:
+      - print
+    parameters:
+      - name: filename
+        in: path
+        type: string
+        required: true
+    responses:
+      302:
+        description: Redirects to a presigned S3 URL with a download disposition.
+      404:
+        description: The file doesn't exist in back-covers/.
+    """
+    key = s3_storage.back_cover_key(filename)
+    if not s3_storage.object_exists(key):
+        abort(404)
+
+    expires_in = current_app.config["S3_PRESIGNED_URL_EXPIRES"]
+    download_url = s3_storage.generate_presigned_url(key, filename, expires_in, download=True)
+
+    log_event("INFO", "baixar_imagem", data={"filename": filename, **device_info()}, status=302)
+    return redirect(download_url, code=302)
 
 
 @bp.get("/files/<folder>/<filename>")
@@ -214,6 +280,8 @@ def serve_file(folder, filename):
     # and path separators in `filename`, so no extra secure_filename() call is
     # needed on top of this folder allowlist.
     if folder not in storage.FOLDERS:
+        log_event("DEBUG", "servir_arquivo_chamada", status=404, data={"folder": folder, "filename": filename})
         abort(404)
     root = current_app.config["STORAGE_ROOT"]
+    log_event("DEBUG", "servir_arquivo_chamada", status=200, data={"folder": folder, "filename": filename})
     return send_from_directory(root / folder, filename)

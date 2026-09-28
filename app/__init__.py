@@ -2,6 +2,7 @@ from flasgger import Swagger
 from flask import Flask, render_template
 
 from .config import Config
+from .logcenter import init_logcenter
 from .storage import ensure_folders
 
 SWAGGER_CONFIG = {
@@ -32,6 +33,7 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     ensure_folders(app.config["STORAGE_ROOT"])
+    init_logcenter(app)
 
     from .routes import bp
     from .pages import bp as bp_pages
