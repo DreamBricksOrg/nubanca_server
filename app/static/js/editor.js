@@ -35,6 +35,10 @@ let startPointerY = 0;
 
 const pointers = new Map();
 let pinchStartDistance = 0;
+let pinchStartCenterX = 0;
+let pinchStartCenterY = 0;
+let pinchImageX = 0;
+let pinchImageY = 0;
 let pinchStartZoom = 1;
 
 function getDisplayScale() {
@@ -81,6 +85,20 @@ function drawPhotoTaken() {
 
   const width = canvas2.width * zoom;
   const height = photoTakenHeight * zoom;
+  const halfWidth = width / 2;
+  const halfHeight = height / 2;
+
+  const minInside = 200;
+  x = Math.max(
+    minInside - halfWidth,
+    Math.min(canvas2.width - minInside + halfWidth, x),
+  );
+
+  // At least 20px of the image must remain inside vertically
+  y = Math.max(
+    minInside - halfHeight,
+    Math.min(canvas2.height - minInside + halfHeight, y),
+  );
 
   ctx2.save();
 
@@ -121,10 +139,42 @@ function movePhotoTaken(dx, dy) {
 
   drawPhotoTaken();
 }
+function startPinch() {
+  const [p1, p2] = [...pointers.values()];
 
+  pinchStartDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+  pinchStartZoom = zoom;
+
+  // Pinch center in screen coordinates
+  const centerScreenX = (p1.x + p2.x) / 2;
+  const centerScreenY = (p1.y + p2.y) / 2;
+
+  // Convert to canvas coordinates
+  const rect = canvas2.getBoundingClientRect();
+
+  pinchStartCenterX =
+    (centerScreenX - rect.left) * (canvas2.width / rect.width);
+
+  pinchStartCenterY =
+    (centerScreenY - rect.top) * (canvas2.height / rect.height);
+
+  // The point on the image underneath the fingers
+  pinchImageX = (pinchStartCenterX - x) / zoom;
+
+  pinchImageY = (pinchStartCenterY - y) / zoom;
+}
+function getCanvasPoint(clientX, clientY) {
+  const rect = canvas2.getBoundingClientRect();
+
+  return {
+    x: (clientX - rect.left) * (canvas2.width / rect.width),
+    y: (clientY - rect.top) * (canvas2.height / rect.height),
+  };
+}
 function saveImage() {
   try {
-    if(isSaving) return;
+    if (isSaving) return;
 
     isSaving = true;
     saveImage_btn.disabled = true;
@@ -236,11 +286,7 @@ editor.addEventListener("pointerdown", (e) => {
     startY = y;
   }
   if (pointers.size === 2) {
-    const [p1, p2] = [...pointers.values()];
-
-    pinchStartDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-
-    pinchStartZoom = zoom;
+    startPinch();
   }
 });
 
@@ -277,6 +323,9 @@ editor.addEventListener("pointermove", (e) => {
     const ratio = currentDistance / pinchStartDistance;
 
     zoom = Math.max(0.1, pinchStartZoom * ratio);
+
+    x = pinchStartCenterX - pinchImageX * zoom;
+    y = pinchStartCenterY - pinchImageY * zoom;
 
     drawPhotoTaken();
   }
@@ -357,11 +406,7 @@ window.addEventListener("keydown", (e) => {
   // If the real mouse pointer is already in the map,
   // start the pinch.
   if (pointers.size === 2) {
-    const [p1, p2] = [...pointers.values()];
-
-    pinchStartDistance = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-
-    pinchStartZoom = zoom;
+    startPinch();
   }
 
   console.log("Virtual finger started");
