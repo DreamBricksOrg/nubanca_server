@@ -31,3 +31,7 @@ body {
   gap: 50px;
   width: 40%;
 }
+#loading > span {
+  color: white;
+  margin: 30px;
+}
