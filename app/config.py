@@ -28,6 +28,8 @@ class Config:
     IMAGEMAGICK_ARGS = os.environ.get("IMAGEMAGICK_ARGS", "")
     IMAGEMAGICK_TIMEOUT = int(os.environ.get("IMAGEMAGICK_TIMEOUT", "60"))
 
+    USE_REMBG = os.environ.get("USE_REMBG", "true").strip().lower() not in ("false", "0", "")
+    REMBG_MODEL = os.environ.get("REMBG_MODEL", "birefnet-general-lite")
 
     TIMEOUT_QRCODE = os.environ.get("TIMEOUT_QRCODE", "30")
     TIMER_POOLING = os.environ.get("TIMER_POOLING", "5")

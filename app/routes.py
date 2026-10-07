@@ -1,6 +1,6 @@
 from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_from_directory, url_for
 
-from . import imagemagick, printing, s3_storage, storage
+from . import imagemagick, printing, s3_storage, storage, rembg
 from .logcenter import log_event
 
 bp = Blueprint("main", __name__)
@@ -45,11 +45,15 @@ def get_image():
               example: Nenhuma imagem nova disponível
     """
     root = current_app.config["STORAGE_ROOT"]
+    use_rembg = current_app.config["USE_REMBG"]
     dest = storage.promote_latest_capture(root / "captures", root / "photos")
     if dest is None:
         return jsonify({"success": False, "message": "Nenhuma imagem nova disponível"}), 404
 
     try:
+        if use_rembg == True:
+          model = current_app.config.get("REMBG_MODEL")
+          rembg.remove_background(model, dest)
         imagemagick.apply_treatment(dest)
     except imagemagick.TreatmentError as exc:
         log_event("ERROR", "tratamento_imagem_falhou", data={"file": dest.name, "error": str(exc)})

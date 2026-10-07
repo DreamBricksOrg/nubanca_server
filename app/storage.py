@@ -4,7 +4,7 @@ import tempfile
 import uuid
 from datetime import datetime
 from pathlib import Path
-
+from PIL import Image
 FOLDERS = ("captures", "photos", "discards")
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
@@ -58,7 +58,7 @@ def promote_latest_capture(captures_folder: Path, photos_folder: Path):
 
     latest = max(files, key=lambda p: p.stat().st_mtime)
 
-    new_name = build_timestamped_filename(latest.suffix, photos_folder)
+    new_name = build_timestamped_filename(".png", photos_folder)
     dest = photos_folder / new_name
     shutil.move(str(latest), str(dest))
 
