@@ -23,7 +23,7 @@ let lastMouseY = 0;
 coverImage.src = coverImagePath;
 const photoTakenPath = localStorage.getItem("imgData");
 photoTaken.src = photoTakenPath;
-
+text_cover = "";
 let x = 0;
 let y = 0;
 
@@ -54,13 +54,56 @@ function getDisplayScale() {
 
 // IMAGE 1
 coverImage.onload = () => {
+  drawCover();
+};
+
+async function drawCover() {
   displayScale = getDisplayScale();
   canvas1.width = coverImage.width * displayScale;
   canvas1.height = coverImage.height * displayScale;
 
   ctx1.drawImage(coverImage, 0, 0, canvas1.width, canvas1.height);
+  await document.fonts.load(`${30 * displayScale}px "Nu Sans Text"`);
+
+  drawCoverText(ctx1, displayScale);
+
   setupEditor();
-};
+}
+
+function drawCoverText(ctx, scale) {
+  ctx.font = `600 ${28 * scale}px "Nu Sans Text"`;
+  ctx.fillStyle = "white";
+
+  const spacing = -1.7 * scale;
+  const text = text_cover + " REVELA:";
+
+  const centerX = 215 * scale;
+  const textWidth = getTextWidth(ctx, text, spacing);
+
+  const x = centerX - textWidth / 2;
+
+  fillTextWithSpacing(ctx, text, x, 90 * scale, spacing);
+}
+
+function getTextWidth(ctx, text, spacing) {
+  let width = 0;
+
+  for (const char of text) {
+    width += ctx.measureText(char).width;
+  }
+
+  // spacing only goes BETWEEN characters
+  width += spacing * (text.length - 1);
+
+  return width;
+}
+
+function fillTextWithSpacing(ctx, text, x, y, spacing) {
+  for (const char of text) {
+    ctx.fillText(char, x, y);
+    x += ctx.measureText(char).width + spacing;
+  }
+}
 
 // IMAGE 2
 photoTaken.onload = () => {
@@ -175,7 +218,10 @@ function getCanvasPoint(clientX, clientY) {
 function saveImage() {
   try {
     if (isSaving) return;
-
+    if (text_cover.length === 0) {
+      text_cover = "PROTAGONISTA";
+      drawCover();
+    }
     isSaving = true;
     saveImage_btn.disabled = true;
     document.getElementById("loading").style.display = "flex";
@@ -210,7 +256,7 @@ function saveImage() {
 
     // Draw Image 1 on top
     ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
-
+    drawCoverText(ctx,1);
     outputCanvas.toBlob(async (blob) => {
       const formData = new FormData();
 
@@ -390,37 +436,44 @@ window.addEventListener("mousemove", (e) => {
 });
 
 window.addEventListener("keydown", (e) => {
-  if (e.key !== "Shift" || testPinch) return;
+  if (e.key == "Shift") {
+    testPinch = true;
 
-  testPinch = true;
+    // Virtual second finger
+    const virtualX = lastMouseX + 100;
+    const virtualY = lastMouseY;
 
-  // Virtual second finger
-  const virtualX = lastMouseX + 100;
-  const virtualY = lastMouseY;
+    pointers.set(virtualPointerId, {
+      x: virtualX,
+      y: virtualY,
+    });
 
-  pointers.set(virtualPointerId, {
-    x: virtualX,
-    y: virtualY,
-  });
+    // If the real mouse pointer is already in the map,
+    // start the pinch.
+    if (pointers.size === 2) {
+      startPinch();
+    }
 
-  // If the real mouse pointer is already in the map,
-  // start the pinch.
-  if (pointers.size === 2) {
-    startPinch();
+    console.log("Virtual finger started");
+  } else if (e.key.length === 1) {
+    if (e.key === " " && text_cover < 1) return;
+    text_cover += e.key.toUpperCase();
+    drawCover();
+  } else if (e.key === "Backspace") {
+    text_cover = text_cover.slice(0, -1);
+    drawCover();
   }
-
-  console.log("Virtual finger started");
 });
 
 window.addEventListener("keyup", (e) => {
-  if (e.key !== "Shift") return;
+  if (e.key == "Shift") {
+    testPinch = false;
 
-  testPinch = false;
+    pointers.delete(virtualPointerId);
 
-  pointers.delete(virtualPointerId);
+    pinchStartDistance = 0;
 
-  pinchStartDistance = 0;
-
-  console.log("Virtual finger removed");
+    console.log("Virtual finger removed");
+  }
 });
 //#endregion

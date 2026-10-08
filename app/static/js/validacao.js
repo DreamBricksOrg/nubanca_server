@@ -1,3 +1,4 @@
+localStorage.clear();
 const content = document.getElementById("content");
 const disapproved_btn = document.getElementById("disapproved");
 const approved_btn = document.getElementById("approved");
