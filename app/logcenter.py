@@ -3,7 +3,12 @@ import http
 import logging
 
 from flask import current_app
-from logcenter_sdk import LogCenterConfig, LogCenterSender
+from logcenter_sdk import (
+    LogCenterConfig,
+    LogCenterSender,
+    LogCenterV3Config,
+    LogCenterV3Sender,
+)
 
 _LEVELS = {
     "DEBUG": logging.DEBUG,
@@ -40,7 +45,21 @@ def init_logcenter(app):
     de retry em background à toa em dev/testes sem o LogCenter configurado.
     """
     base_url = app.config.get("LOGCENTER_BASE_URL")
+    base_url_v3 = app.config.get("LOGCENTERV3_BASE_URL")
     project_id = app.config.get("LOGCENTER_PROJECT_ID")
+    
+    if app.config.get("LOGCENTERV3_ENABLED") and base_url_v3:
+        cfgv3 = LogCenterV3Config(
+            base_url=base_url_v3,
+            api_key=app.config.get("LOGCENTERV3_API_KEY"),
+            timeout_s=app.config["LOGCENTERV3_TIMEOUT_S"],
+            spool_dir=app.config["LOGCENTERV3_SPOOL_DIR"],
+            flush_interval_s=app.config["LOGCENTERV3_FLUSH_INTERVAL_S"],
+            auto_flush=app.config["LOGCENTERV3_AUTO_FLUSH"],
+        )
+        senderv3 = LogCenterV3Sender(cfgv3)
+        app.extensions["logcenterv3"] = senderv3
+        atexit.register(senderv3.stop_background_flush_thread)
 
     if not (app.config.get("LOGCENTER_ENABLED") and base_url and project_id):
         app.extensions["logcenter"] = None
@@ -55,6 +74,7 @@ def init_logcenter(app):
         flush_interval_s=app.config["LOGCENTER_FLUSH_INTERVAL_S"],
         auto_flush=app.config["LOGCENTER_AUTO_FLUSH"],
     )
+    
     sender = LogCenterSender(cfg)
     app.extensions["logcenter"] = sender
     atexit.register(sender.stop_background_flush_thread)
@@ -64,6 +84,11 @@ def init_logcenter(app):
 def get_logcenter():
     """Retorna o LogCenterSender da app atual, ou None se estiver desabilitado."""
     return current_app.extensions.get("logcenter")
+
+
+def get_logcenter_v3():
+    """Retorna o LogCenterSender da app atual, ou None se estiver desabilitado."""
+    return current_app.extensions.get("logcenterv3")
 
 
 def log_event(level, message, *, data=None, status=None):
@@ -89,3 +114,10 @@ def log_event(level, message, *, data=None, status=None):
         data=data,
         status=_status_message(status) if status is not None else None,
     )
+
+
+def log_event_v3(payload):
+    senderv3 = get_logcenter_v3()
+    if senderv3 is None:
+        return
+    senderv3.send_sync(payload)

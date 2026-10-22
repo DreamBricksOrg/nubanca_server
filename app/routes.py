@@ -1,7 +1,9 @@
 from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_from_directory, url_for
 
+from .event_types import EventType
+
 from . import imagemagick, printing, s3_storage, storage
-from .logcenter import log_event
+from .logcenter import log_event, log_event_v3
 
 bp = Blueprint("main", __name__)
 
@@ -163,6 +165,7 @@ def print_image_route():
     if print_result["printed"]:
         message = "Imagem salva em back-covers e enviada para impressão"
         log_event("INFO", "imprimir_imagem_sucesso", data={"file": filename}, status=200)
+        log_event_v3(EventType.imprimir_imagem_sucesso.generate_payload(data={"file": filename}))
     else:
         message = f"Imagem salva em back-covers; falha ao imprimir ({print_result['message']})"
     log_event("DEBUG", "imprimir_imagem_chamada", status=200)
@@ -201,6 +204,8 @@ def view_photo(filename):
     download_url = url_for("main.download_photo", filename=filename)
 
     log_event("INFO", "visualizar_foto_acessada", data={"filename": filename, **device_info()}, status=200)
+    log_event_v3(EventType.visualizar_foto_acessada.generate_payload(data={"filename": filename, **device_info()}))
+    
     return render_template("view.html", filename=filename, image_url=image_url, download_url=download_url)
 
 
@@ -220,6 +225,7 @@ def share_photo(filename):
         description: Share event logged.
     """
     log_event("INFO", "compartilhar_imagem", data={"filename": filename, **device_info()}, status=204)
+    log_event_v3(EventType.compartilhar_imagem.generate_payload(data={"filename": filename, **device_info()}))
     return "", 204
 
 
@@ -248,6 +254,7 @@ def download_photo(filename):
     download_url = s3_storage.generate_presigned_url(key, filename, expires_in, download=True)
 
     log_event("INFO", "baixar_imagem", data={"filename": filename, **device_info()}, status=302)
+    log_event_v3(EventType.baixar_imagem.generate_payload(data={"filename": filename, **device_info()}))
     return redirect(download_url, code=302)
 
 

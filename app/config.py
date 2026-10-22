@@ -40,3 +40,11 @@ class Config:
     LOGCENTER_SPOOL_DIR = Path(os.environ.get("LOGCENTER_SPOOL_DIR", ".logcenter"))
     LOGCENTER_FLUSH_INTERVAL_S = float(os.environ.get("LOGCENTER_FLUSH_INTERVAL_S", "10"))
     LOGCENTER_AUTO_FLUSH = os.environ.get("LOGCENTER_AUTO_FLUSH", "true").strip().lower() not in ("false", "0", "")
+    
+    LOGCENTERV3_ENABLED = os.environ.get("LOGCENTERV3_ENABLED", "true").strip().lower() not in ("false", "0", "")
+    LOGCENTERV3_BASE_URL = os.environ.get("LOGCENTERV3_BASE_URL", "")
+    LOGCENTERV3_API_KEY = os.environ.get("LOGCENTERV3_API_KEY")
+    LOGCENTERV3_TIMEOUT_S = float(os.environ.get("LOGCENTERV3_TIMEOUT_S", "10"))
+    LOGCENTERV3_SPOOL_DIR = Path(os.environ.get("LOGCENTERV3_SPOOL_DIR", ".logcenter"))
+    LOGCENTERV3_FLUSH_INTERVAL_S = float(os.environ.get("LOGCENTERV3_FLUSH_INTERVAL_S", "10"))
+    LOGCENTERV3_AUTO_FLUSH = os.environ.get("LOGCENTERV3_AUTO_FLUSH", "true").strip().lower() not in ("false", "0", "")
