@@ -123,10 +123,11 @@ def log_event(level, message, *, data=None, status=None):
 
 
 def log_event_v3(payload, isDebug: bool = False):
+    event_location = current_app.config.get("EVENT_LOCATION", "")
     senderv3 = get_logcenter_v3()
     if senderv3 is None:
         return
     if not isDebug:
         senderv3.send_sync(payload)
     else:
-        senderv3.send_debug(payload)
+        senderv3.send_debug(f"{event_location} {payload}")
