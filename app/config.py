@@ -48,3 +48,8 @@ class Config:
     LOGCENTERV3_SPOOL_DIR = Path(os.environ.get("LOGCENTERV3_SPOOL_DIR", ".logcenter"))
     LOGCENTERV3_FLUSH_INTERVAL_S = float(os.environ.get("LOGCENTERV3_FLUSH_INTERVAL_S", "10"))
     LOGCENTERV3_AUTO_FLUSH = os.environ.get("LOGCENTERV3_AUTO_FLUSH", "true").strip().lower() not in ("false", "0", "")
+    LOGCENTERV3_REGION_NAME = os.environ.get("LOGCENTERV3_REGION_NAME") or "sa-east-1"
+    LOGCENTERV3_AWS_ACCESS_KEY = os.environ.get("LOGCENTERV3_AWS_ACCESS_KEY")
+    LOGCENTERV3_AWS_SECRET_ACCESS_KEY = os.environ.get("LOGCENTERV3_AWS_SECRET_ACCESS_KEY")
+    LOGCENTERV3_LOG_GROUP = os.environ.get("LOGCENTERV3_LOG_GROUP")
+    LOGCENTERV3_LOG_STREAM_NAME = os.environ.get("LOGCENTERV3_LOG_STREAM_NAME")

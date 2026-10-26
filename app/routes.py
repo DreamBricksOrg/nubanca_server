@@ -55,6 +55,7 @@ def get_image():
         imagemagick.apply_treatment(dest)
     except imagemagick.TreatmentError as exc:
         log_event("ERROR", "tratamento_imagem_falhou", data={"file": dest.name, "error": str(exc)})
+        log_event_v3(f"ERROR: tratamento_imagem_falhou | \"file\": {dest.name}, \"error\": {str(exc)}", True)
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
     image_url = f"{base_url}/files/photos/{dest.name}"
@@ -95,8 +96,11 @@ def discard_image():
     dest = storage.discard_latest_photo(root / "photos", root / "discards")
     if dest is None:
         log_event("DEBUG", "descartar_imagem_chamada", status=404)
+        log_event_v3("DEBUG: descartar_imagem_chamada | status=404", True)
         return jsonify({"success": False, "message": "Nenhuma foto para descartar"}), 404
     log_event("DEBUG", "descartar_imagem_chamada", status=200)
+    log_event_v3("DEBUG: descartar_imagem_chamada | status=200", True)
+    
     return jsonify({"success": True, "message": "Foto descartada"})
 
 
@@ -147,6 +151,8 @@ def print_image_route():
         temp_path = storage.save_uploaded_image_to_tempfile(file_storage)
     except ValueError as exc:
         log_event("DEBUG", "imprimir_imagem_chamada", status=400)
+        log_event_v3("DEBUG: imprimir_imagem_chamada | status=400", True)
+        
         return jsonify({"success": False, "message": str(exc)}), 400
 
     try:
@@ -154,6 +160,8 @@ def print_image_route():
             print_result = printing.print_image(temp_path)
         except printing.PrintError as exc:
             log_event("ERROR", "imprimir_imagem_falhou", data={"file": temp_path.name, "error": str(exc)})
+            log_event_v3(f"ERROR: imprimir_imagem_falhou | \"file\": {temp_path.name}, \"error\": {str(exc)}", True)
+            
             print_result = {"printed": False, "message": str(exc)}
 
         filename = storage.build_unique_filename(temp_path.suffix)
@@ -169,6 +177,8 @@ def print_image_route():
     else:
         message = f"Imagem salva em back-covers; falha ao imprimir ({print_result['message']})"
     log_event("DEBUG", "imprimir_imagem_chamada", status=200)
+    log_event_v3("DEBUG: imprimir_imagem_chamada | status=200", True)
+
     return jsonify({
         "success": True,
         "message": message,
@@ -288,7 +298,9 @@ def serve_file(folder, filename):
     # needed on top of this folder allowlist.
     if folder not in storage.FOLDERS:
         log_event("DEBUG", "servir_arquivo_chamada", status=404, data={"folder": folder, "filename": filename})
+        log_event_v3(f"DEBUG: servir_arquivo_chamada, status=404, data=\"folder\": {folder}, \"filename\": {filename}", True)
         abort(404)
     root = current_app.config["STORAGE_ROOT"]
     log_event("DEBUG", "servir_arquivo_chamada", status=200, data={"folder": folder, "filename": filename})
+    log_event_v3(f"DEBUG: servir_arquivo_chamada, status=200, data=\"folder\": {folder}, \"filename\": {filename}", True)
     return send_from_directory(root / folder, filename)

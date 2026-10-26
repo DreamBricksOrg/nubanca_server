@@ -56,7 +56,13 @@ def init_logcenter(app):
             spool_dir=app.config["LOGCENTERV3_SPOOL_DIR"],
             flush_interval_s=app.config["LOGCENTERV3_FLUSH_INTERVAL_S"],
             auto_flush=app.config["LOGCENTERV3_AUTO_FLUSH"],
+            region_name=app.config["LOGCENTERV3_REGION_NAME"],
+            aws_access_key_id=app.config["LOGCENTERV3_AWS_ACCESS_KEY"],
+            aws_secret_access_key=app.config["LOGCENTERV3_AWS_SECRET_ACCESS_KEY"],
+            log_group_name=app.config["LOGCENTERV3_LOG_GROUP"],
+            log_stream_name=app.config["LOGCENTERV3_LOG_STREAM_NAME"],
         )
+        print(app.config["LOGCENTERV3_REGION_NAME"])
         senderv3 = LogCenterV3Sender(cfgv3)
         app.extensions["logcenterv3"] = senderv3
         atexit.register(senderv3.stop_background_flush_thread)
@@ -74,7 +80,7 @@ def init_logcenter(app):
         flush_interval_s=app.config["LOGCENTER_FLUSH_INTERVAL_S"],
         auto_flush=app.config["LOGCENTER_AUTO_FLUSH"],
     )
-    
+
     sender = LogCenterSender(cfg)
     app.extensions["logcenter"] = sender
     atexit.register(sender.stop_background_flush_thread)
@@ -116,8 +122,11 @@ def log_event(level, message, *, data=None, status=None):
     )
 
 
-def log_event_v3(payload):
+def log_event_v3(payload, isDebug: bool = False):
     senderv3 = get_logcenter_v3()
     if senderv3 is None:
         return
-    senderv3.send_sync(payload)
+    if not isDebug:
+        senderv3.send_sync(payload)
+    else:
+        senderv3.send_debug(payload)
