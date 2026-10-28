@@ -37,8 +37,10 @@ def create_app(config_class=Config):
 
     from .routes import bp
     from .pages import bp as bp_pages
+    from .pwa import bp as bp_pwa
     app.register_blueprint(bp)
     app.register_blueprint(bp_pages)
+    app.register_blueprint(bp_pwa)
 
     Swagger(app, config=SWAGGER_CONFIG, template=SWAGGER_TEMPLATE)
 
