@@ -6,7 +6,7 @@ footer.style.display = "none";
 
 async function obterFotoMaisRecente() {
   try {
-    const resposta = await fetch(BASE_URL + "/image");
+    const resposta = await fetch("/image");
     if (!resposta.ok) {
       throw new Error("Erro na requisição: " + resposta.status);
     }

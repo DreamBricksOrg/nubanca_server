@@ -58,7 +58,7 @@ def get_image():
         log_event_v3(f"ERROR: tratamento_imagem_falhou | \"file\": {dest.name}, \"error\": {str(exc)}", True)
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
-    image_url = f"{base_url}/files/photos/{dest.name}"
+    image_url = f"http://localhost:5000/files/photos/{dest.name}"
     return jsonify({"image_url": image_url})
 
 

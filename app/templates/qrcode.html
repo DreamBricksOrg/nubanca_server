@@ -24,7 +24,7 @@
       <div id="qrcode"></div>
     </div>
     <script>
-      const BASE_URL = "{{ server_url }}";
+      const BASE_URL = "http://localhost:5000"
       const TIMEOUT = parseInt("{{ timeout_screen }}");
     </script>
     <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>

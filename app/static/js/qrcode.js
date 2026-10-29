@@ -12,7 +12,7 @@ var qrcode = new QRCode(qr, {
 
 
 function retornarTermos(){
-    window.location.href = BASE_URL + "/";
+    window.location.href = BASE_URL + "/validacao";
 }
 
 setTimeout(retornarTermos, TIMEOUT * 1000);

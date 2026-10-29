@@ -1,5 +1,5 @@
 const logo = document.getElementById("logo")
 
 logo.addEventListener("click", () =>{
-    window.location.href = BASE_URL + "/";
+    window.location.href = BASE_URL + "/validacao";
 });

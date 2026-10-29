@@ -229,7 +229,8 @@ function saveImage() {
       localStorage.setItem("qrcodeImagePath", dados.page_url);
       window.location.href = BASE_URL + "/qrcode";
     }, "image/png");
-  } catch {
+  } catch (error) {
+    console.error("Erro ao salvar a imagem:", error);
     isSaving = false;
     saveImage_btn.disabled = false;
     document.getElementById("loading").style.display = "none";
