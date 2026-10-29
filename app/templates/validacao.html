@@ -66,7 +66,7 @@
       </button>
     </footer>
     <script>
-      const BASE_URL = "http://localhost:5000"
+      const BASE_URL = "{{ server_url }}";
       const timer_pooling = parseInt("{{ timer_pooling }}");
     </script>
     <script src="{{ url_for('static', filename='js/validacao.js') }}"></script>
