@@ -18,10 +18,7 @@ class Config:
     PRINT_ENABLED = os.environ.get("PRINT_ENABLED", "true").strip().lower() not in ("false", "0", "")
     SUMATRA_PATH = os.environ.get("SUMATRA_PATH", "SumatraPDF.exe")
     PRINTER_NAME = os.environ.get("PRINTER_NAME", "")
-    PRINT_SETTINGS = os.environ.get("PRINT_SETTINGS", "noscale,paper=A4,center")
     PRINT_TIMEOUT = int(os.environ.get("PRINT_TIMEOUT", "60"))
-    PRINT_DPI = int(os.environ.get("PRINT_DPI", "300"))
-    PRINT_MARGIN_MM = float(os.environ.get("PRINT_MARGIN_MM", "6"))
 
     IMAGEMAGICK_ENABLED = os.environ.get("IMAGEMAGICK_ENABLED", "true").strip().lower() not in ("false", "0", "")
     IMAGEMAGICK_PATH = os.environ.get("IMAGEMAGICK_PATH", "magick")
