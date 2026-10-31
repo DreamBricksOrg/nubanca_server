@@ -16,6 +16,10 @@ def test_openapi_spec_lists_all_endpoints(client):
         "/image",
         "/discard",
         "/print",
+        "/photos",
+        "/photos/print",
         "/view/{filename}",
+        "/view/{filename}/share",
+        "/view/{filename}/download",
         "/files/{folder}/{filename}",
     }

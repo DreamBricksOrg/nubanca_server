@@ -1,3 +1,7 @@
+import tempfile
+from pathlib import Path
+
+from botocore.exceptions import BotoCoreError, ClientError
 from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_from_directory, url_for
 
 from .event_types import EventType
@@ -106,7 +110,7 @@ def discard_image():
 
 @bp.post("/print")
 def print_image_route():
-    """Upload the final treated image and save it for printing.
+    """Upload the final treated image, optionally skipping printing for QR Code only.
     ---
     tags:
       - print
@@ -118,9 +122,14 @@ def print_image_route():
         type: file
         required: true
         description: The final collage image (.jpg, .jpeg or .png).
+      - name: print
+        in: formData
+        type: boolean
+        default: true
+        description: Set to false to save the image for QR Code without printing.
     responses:
       200:
-        description: Image saved to back-covers/ and sent to the printer.
+        description: Image saved to back-covers/ and optionally sent to the printer.
         schema:
           type: object
           properties:
@@ -146,6 +155,7 @@ def print_image_route():
               example: Extensão de arquivo não permitida
     """
     file_storage = request.files.get("image")
+    should_print = request.form.get("print", "true") != "false"
 
     try:
         temp_path = storage.save_uploaded_image_to_tempfile(file_storage)
@@ -155,14 +165,16 @@ def print_image_route():
         
         return jsonify({"success": False, "message": str(exc)}), 400
 
+    print_result = {"printed": False, "message": "Impressão não solicitada"}
     try:
-        try:
-            print_result = printing.print_image(temp_path)
-        except printing.PrintError as exc:
-            log_event("ERROR", "imprimir_imagem_falhou", data={"file": temp_path.name, "error": str(exc)})
-            log_event_v3(f"ERROR: imprimir_imagem_falhou | \"file\": {temp_path.name}, \"error\": {str(exc)}", True)
-            
-            print_result = {"printed": False, "message": str(exc)}
+        if should_print:
+            try:
+                print_result = printing.print_image(temp_path)
+            except printing.PrintError as exc:
+                log_event("ERROR", "imprimir_imagem_falhou", data={"file": temp_path.name, "error": str(exc)})
+                log_event_v3(f"ERROR: imprimir_imagem_falhou | \"file\": {temp_path.name}, \"error\": {str(exc)}", True)
+
+                print_result = {"printed": False, "message": str(exc)}
 
         filename = storage.build_unique_filename(temp_path.suffix)
         s3_storage.upload_file(temp_path, s3_storage.back_cover_key(filename))
@@ -170,7 +182,11 @@ def print_image_route():
         temp_path.unlink(missing_ok=True)
 
     base_url = current_app.config["BASE_URL"].rstrip("/")
-    if print_result["printed"]:
+    if not should_print:
+        message = "Imagem salva em back-covers; apenas QR Code"
+        log_event("INFO", "apenas_qrcode_gerado", data={"file": filename}, status=200)
+        log_event_v3(f"INFO: apenas_qrcode_gerado | \"file\": {filename}", True)
+    elif print_result["printed"]:
         message = "Imagem salva em back-covers e enviada para impressão"
         log_event("INFO", "imprimir_imagem_sucesso", data={"file": filename}, status=200)
         log_event_v3(EventType.imprimir_imagem_sucesso.generate_payload(data={"file": filename}))
@@ -184,6 +200,91 @@ def print_image_route():
         "message": message,
         "page_url": f"{base_url}/view/{filename}",
     })
+
+
+@bp.get("/photos")
+def photo_gallery():
+    """List all photos in the configured S3 bucket and back-cover prefix.
+    ---
+    tags:
+      - photos
+    produces:
+      - text/html
+    responses:
+      200:
+        description: Photo gallery with a print button beneath each image.
+      502:
+        description: Could not list the configured S3 folder.
+    """
+    try:
+        photos = s3_storage.list_back_covers()
+        expires_in = current_app.config["S3_PRESIGNED_URL_EXPIRES"]
+        for photo in photos:
+            photo["image_url"] = s3_storage.generate_presigned_url(
+                photo["key"], photo["filename"], expires_in
+            )
+    except (BotoCoreError, ClientError) as exc:
+        log_event("ERROR", "listar_fotos_falhou", data={"error": str(exc)}, status=502)
+        return render_template(
+            "photos.html", photos=[], error="Não foi possível carregar as fotos. Verifique a configuração do S3."
+        ), 502
+    return render_template("photos.html", photos=photos)
+
+
+@bp.post("/photos/print")
+def print_stored_photo():
+    """Print an existing image from the configured S3 folder without uploading it again.
+    ---
+    tags:
+      - photos
+    consumes:
+      - application/json
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required: [key]
+          properties:
+            key:
+              type: string
+              description: Full S3 key returned in the photo gallery.
+    responses:
+      200:
+        description: Original image sent to the configured printer.
+      400:
+        description: Invalid image key or key outside the configured prefix.
+      404:
+        description: Image no longer exists in S3.
+      409:
+        description: Printing is disabled.
+      502:
+        description: S3 download or printer dispatch failed.
+    """
+    payload = request.get_json(silent=True)
+    key = payload.get("key") if isinstance(payload, dict) else None
+    if not isinstance(key, str) or not s3_storage.is_back_cover_image_key(key):
+        return jsonify({"success": False, "message": "Foto inválida ou fora da pasta configurada"}), 400
+    if not current_app.config.get("PRINT_ENABLED", True):
+        return jsonify({"success": False, "printed": False, "message": "Impressão desabilitada"}), 409
+    try:
+        with tempfile.TemporaryDirectory(prefix="nubanca-print-") as directory:
+            local_path = Path(directory) / f"photo{Path(key).suffix.lower()}"
+            s3_storage.download_file(local_path, key)
+            result = printing.print_image(local_path)
+    except (BotoCoreError, ClientError, printing.PrintError, OSError) as exc:
+        missing = isinstance(exc, ClientError) and exc.response.get("Error", {}).get("Code") in ("404", "NoSuchKey")
+        status = 404 if missing else 502
+        message = "Foto não encontrada" if missing else "Não foi possível imprimir a foto. Verifique o S3 e a impressora."
+        log_event("ERROR", "reimprimir_imagem_falhou", data={"file": key, "error": str(exc)}, status=status)
+        log_event_v3(f"ERROR: reimprimir_imagem_falhou | \"file\": {key}, \"error\": {str(exc)}", True)
+        return jsonify({"success": False, "printed": False, "message": message}), status
+    if not result["printed"]:
+        return jsonify({"success": False, **result}), 409
+    log_event("INFO", "reimprimir_imagem_sucesso", data={"file": key}, status=200)
+    log_event_v3(f"INFO: reimprimir_imagem_sucesso | \"file\": {key}", True)
+    return jsonify({"success": True, **result})
 
 
 @bp.get("/view/<filename>")

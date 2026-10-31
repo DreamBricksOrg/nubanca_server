@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    {% include "_pwa.html" %}
+    <title>Fotos para impressão</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/photos.css') }}" />
+  </head>
+  <body>
+    <header>
+      <img id="logo" src="{{ url_for('static', filename='img/logo-white.png') }}" alt="Logo" />
+      <h1>Fotos para impressão</h1>
+      {% if not error %}<p>{{ photos|length }} foto(s) encontrada(s)</p>{% endif %}
+    </header>
+    <main id="photo-gallery" data-print-url="{{ url_for('main.print_stored_photo') }}">
+      {% if error %}
+      <p class="empty-state" role="alert">{{ error }}</p>
+      {% else %}
+      {% for photo in photos %}
+      <article class="photo-card">
+        <img src="{{ photo.image_url }}" alt="{{ photo.filename }}" loading="lazy" />
+        <p class="filename">{{ photo.filename }}</p>
+        <button type="button" class="btn btn-primary print-photo" data-key="{{ photo.key }}">Imprimir</button>
+        <p class="print-status" role="status" aria-live="polite"></p>
+      </article>
+      {% else %}
+      <p class="empty-state">Nenhuma foto encontrada na pasta configurada.</p>
+      {% endfor %}
+      {% endif %}
+    </main>
+    <script src="{{ url_for('static', filename='js/photos.js') }}" defer></script>
+  </body>
+</html>

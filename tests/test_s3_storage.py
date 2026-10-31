@@ -1,7 +1,9 @@
 import re
 import time
+from datetime import datetime, timezone
 
 import boto3
+from botocore.stub import Stubber
 
 
 def test_mock_bucket_is_ready(app):
@@ -112,3 +114,35 @@ def test_generate_presigned_url_clamps_expires_in_to_s3_max(app, tmp_path):
     # at "now + S3's 7-day (604800s) SigV4 hard cap", not further out.
     assert before + 604800 <= _expires_param(url_over_max) <= after + 604800
     assert before + 604800 <= _expires_param(url_at_max) <= after + 604800
+
+
+def test_list_back_covers_reads_every_s3_page_and_sorts_newest_first(app, monkeypatch):
+    client = boto3.client("s3", region_name=app.config["AWS_REGION"])
+    app.config["EVENT_LOCATION"] = ""
+    bucket = app.config["AWS_S3_BUCKET"]
+    with Stubber(client) as stubber:
+        stubber.add_response("list_objects_v2", {
+            "IsTruncated": True,
+            "Contents": [
+                {"Key": "back-covers/old.jpg", "LastModified": datetime(2026, 1, 1, tzinfo=timezone.utc)},
+                {"Key": "back-covers/ignored.txt", "LastModified": datetime(2026, 1, 4, tzinfo=timezone.utc)},
+            ],
+            "NextContinuationToken": "next-page",
+        }, {"Bucket": bucket, "Prefix": "back-covers/"})
+        stubber.add_response("list_objects_v2", {
+            "IsTruncated": False,
+            "Contents": [
+                {"Key": "back-covers/new.jpg", "LastModified": datetime(2026, 1, 3, tzinfo=timezone.utc)},
+                {"Key": "back-covers/middle.png", "LastModified": datetime(2026, 1, 2, tzinfo=timezone.utc)},
+            ],
+        }, {"Bucket": bucket, "Prefix": "back-covers/", "ContinuationToken": "next-page"})
+        monkeypatch.setattr(s3_storage, "_client", lambda: client)
+
+        with app.app_context():
+            photos = s3_storage.list_back_covers()
+
+        assert [photo["filename"] for photo in photos] == ["new.jpg", "middle.png", "old.jpg"]
+        assert [photo["key"] for photo in photos] == [
+            "back-covers/new.jpg", "back-covers/middle.png", "back-covers/old.jpg"
+        ]
+        stubber.assert_no_pending_responses()

@@ -2,6 +2,7 @@ const canvas1 = document.getElementById("canvas1");
 const canvas2 = document.getElementById("canvas2");
 
 const saveImage_btn = document.getElementById("saveImage");
+const qrcodeOnly_btn = document.getElementById("qrcodeOnly");
 let isSaving = false;
 const moveSpeed = 5;
 
@@ -172,12 +173,13 @@ function getCanvasPoint(clientX, clientY) {
     y: (clientY - rect.top) * (canvas2.height / rect.height),
   };
 }
-function saveImage() {
+async function saveImage(shouldPrint = true) {
   try {
     if (isSaving) return;
 
     isSaving = true;
     saveImage_btn.disabled = true;
+    qrcodeOnly_btn.disabled = true;
     document.getElementById("loading").style.display = "flex";
 
     const outputCanvas = document.createElement("canvas");
@@ -211,28 +213,34 @@ function saveImage() {
     // Draw Image 1 on top
     ctx.drawImage(coverImage, 0, 0, coverImage.width, coverImage.height);
 
-    outputCanvas.toBlob(async (blob) => {
-      const formData = new FormData();
+    const blob = await new Promise((resolve) => {
+      outputCanvas.toBlob(resolve, "image/png");
+    });
+    if (!blob) {
+      throw new Error("Não foi possível gerar a imagem");
+    }
+    const formData = new FormData();
 
-      formData.append("image", blob, "edited-image.png");
+    formData.append("image", blob, "edited-image.png");
+    formData.append("print", String(shouldPrint));
 
-      let resp = await fetch(BASE_URL + "/print", {
-        method: "POST",
-        body: formData,
-      });
-      if (!resp.ok) {
-        throw new Error("Erro na requisição: " + resp.status);
-      }
+    const resp = await fetch(BASE_URL + "/print", {
+      method: "POST",
+      body: formData,
+    });
+    if (!resp.ok) {
+      throw new Error("Erro na requisição: " + resp.status);
+    }
 
-      const dados = await resp.json();
+    const dados = await resp.json();
 
-      localStorage.setItem("qrcodeImagePath", dados.page_url);
-      window.location.href = BASE_URL + "/qrcode";
-    }, "image/png");
+    localStorage.setItem("qrcodeImagePath", dados.page_url);
+    window.location.href = BASE_URL + "/qrcode";
   } catch (error) {
     console.error("Erro ao salvar a imagem:", error);
     isSaving = false;
     saveImage_btn.disabled = false;
+    qrcodeOnly_btn.disabled = false;
     document.getElementById("loading").style.display = "none";
   }
 }
@@ -266,6 +274,10 @@ window.addEventListener("mouseup", stopMoving);
 
 saveImage_btn.addEventListener("click", () => {
   saveImage();
+});
+
+qrcodeOnly_btn.addEventListener("click", () => {
+  saveImage(false);
 });
 
 

@@ -143,6 +143,22 @@ Exemplo com `curl`:
 curl -X POST http://localhost:5000/print -F "image=@collage.jpg"
 ```
 
+### `GET /photos`
+
+Galeria HTML com todas as fotos (`.jpg`, `.jpeg`, `.png`) do bucket `AWS_S3_BUCKET`, no prefixo `back-covers/<EVENT_LOCATION>/`. Se `EVENT_LOCATION` estiver vazio, lista `back-covers/` e suas subpastas. A listagem percorre todas as páginas do S3, mostra as fotos mais recentes primeiro e usa URLs presignadas para exibir as imagens.
+
+Cada foto tem um botão **Imprimir** abaixo dela. Durante o envio, o botão fica desabilitado para evitar cliques duplicados; o resultado aparece no próprio cartão, sem sair da galeria.
+
+As credenciais configuradas precisam de `s3:ListBucket` no bucket (para o prefixo configurado) e `s3:GetObject` nas fotos. Uma pasta vazia mostra uma mensagem; falhas de acesso ao S3 retornam uma página de erro com status `502`.
+
+### `POST /photos/print`
+
+Recebe JSON com `key`, a chave completa do objeto no S3, por exemplo `{"key": "back-covers/sp/foto.png"}`. Baixa a imagem original para uma pasta temporária, envia para a impressora configurada (`SUMATRA_PATH` / `PRINTER_NAME`) e remove os arquivos temporários, inclusive em caso de erro. Não faz outro upload nem cria uma cópia no bucket.
+
+Aceita apenas imagens dentro do prefixo configurado. Retorna `200` com `success: true` e `printed: true` quando o comando de impressão é aceito; `400` para uma chave inválida; `404` se a foto não existir; `409` se a impressão estiver desabilitada; ou `502` se houver falha no download ou na impressão. Registra os eventos `reimprimir_imagem_sucesso` e `reimprimir_imagem_falhou`.
+
+> Estes endpoints são operacionais e não têm autenticação própria, assim como o fluxo de impressão existente. Restrinja o acesso à rede da operação ou proteja as rotas no proxy antes de expô-las publicamente: a galeria permite visualizar todas as fotos do prefixo e acionar a impressora do servidor.
+
 ### `GET /view/<filename>`
 
 Página HTML (não JSON) para o cliente final ver a foto impressa no celular, com botões de **Compartilhar** (via `navigator.share` do navegador) e **Download**. `<filename>` é o nome do objeto salvo no S3 sob o prefixo `back-covers/` (normalmente obtido do `page_url` retornado por `POST /print`). A imagem em si é servida via presigned URL do S3 — a página faz um `head_object` no S3 para confirmar que o arquivo existe antes de renderizar.

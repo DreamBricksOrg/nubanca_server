@@ -4,6 +4,7 @@ import boto3
 from botocore.exceptions import ClientError
 from flask import current_app
 
+from .storage import is_allowed_extension
 
 S3_MAX_PRESIGNED_EXPIRES = 604800  # S3 SigV4 hard cap: 7 days, in seconds
 
@@ -30,6 +31,37 @@ def back_cover_key(filename: str) -> str:
 
 def upload_file(local_path: Path, key: str) -> None:
     _client().upload_file(str(local_path), _bucket(), key)
+
+
+def download_file(local_path: Path, key: str) -> None:
+    _client().download_file(_bucket(), key, str(local_path))
+
+
+def is_back_cover_image_key(key: str) -> bool:
+    return (
+        key.startswith(back_cover_key(""))
+        and "\\" not in key
+        and not any(part in (".", "..") for part in key.split("/"))
+        and not any(ord(char) < 32 for char in key)
+        and is_allowed_extension(key)
+    )
+
+
+def list_back_covers() -> list[dict]:
+    pages = _client().get_paginator("list_objects_v2").paginate(
+        Bucket=_bucket(), Prefix=back_cover_key("")
+    )
+    objects = [
+        obj
+        for page in pages
+        for obj in page.get("Contents", [])
+        if is_back_cover_image_key(obj["Key"])
+    ]
+    objects.sort(key=lambda obj: (obj["LastModified"], obj["Key"]), reverse=True)
+    return [
+        {"key": obj["Key"], "filename": obj["Key"].rsplit("/", 1)[-1]}
+        for obj in objects
+    ]
 
 
 def object_exists(key: str) -> bool:
