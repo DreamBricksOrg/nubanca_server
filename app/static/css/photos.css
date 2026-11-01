@@ -36,7 +36,9 @@ header p {
 }
 
 .filename,
-.print-status {
+.print-status,
+.print-history-label,
+.print-estimate {
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -53,4 +55,25 @@ header p {
 
 .empty-state {
   grid-column: 1 / -1;
+}
+
+.photo-card.is-printed {
+  border-color: #58e589;
+  box-shadow: 0 0 0 3px #58e589;
+}
+
+.print-history-label {
+  color: #b8ffd0;
+  font-weight: 600;
+}
+
+.print-estimate {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.estimate-photo:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
 }

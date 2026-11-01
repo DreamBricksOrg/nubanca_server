@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% include "_pwa.html" %}
     <title>Fotos para impressão</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/photos.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/photos.css', v='print-history-1') }}" />
   </head>
-  <body>
+  <body data-print-scope="{{ [config.AWS_S3_BUCKET, config.EVENT_LOCATION, config.PRINTER_NAME]|tojson|forceescape }}">
     <header>
       <img id="logo" src="{{ url_for('static', filename='img/logo-white.png') }}" alt="Logo" />
       <h1>Fotos para impressão</h1>
       {% if not error %}<p>{{ photos|length }} foto(s) encontrada(s)</p>{% endif %}
+      <p>Contorno verde: envio à impressão registrado neste navegador; não confirma a saída do papel.</p>
+      <p>Previsão de 3min30s por foto, considerando apenas os envios registrados neste navegador.</p>
+      <p id="history-warning" role="status" aria-live="polite"></p>
     </header>
     <main id="photo-gallery" data-print-url="{{ url_for('main.print_stored_photo') }}">
       {% if error %}
@@ -21,14 +24,18 @@
       <article class="photo-card">
         <img src="{{ photo.image_url }}" alt="{{ photo.filename }}" loading="lazy" />
         <p class="filename">{{ photo.filename }}</p>
+        <p class="print-history-label"></p>
         <button type="button" class="btn btn-primary print-photo" data-key="{{ photo.key }}">Imprimir</button>
         <p class="print-status" role="status" aria-live="polite"></p>
+        <button type="button" class="btn btn-secondary estimate-photo" data-key="{{ photo.key }}">Estimar horário</button>
+        <p class="print-estimate" role="status" aria-live="polite"></p>
       </article>
       {% else %}
       <p class="empty-state">Nenhuma foto encontrada na pasta configurada.</p>
       {% endfor %}
       {% endif %}
     </main>
-    <script src="{{ url_for('static', filename='js/photos.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/print_history.js', v='print-history-1') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/photos.js', v='print-history-1') }}" defer></script>
   </body>
 </html>

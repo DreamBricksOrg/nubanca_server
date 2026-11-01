@@ -39,10 +39,6 @@ canvas {
   z-index: 2;
 }
 
-.btn-secondary {
-  width: 50px !important;
-  height: 50px;
-}
 
 #zoom_container {
   padding-top: 10px;

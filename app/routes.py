@@ -1,6 +1,8 @@
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
+from boto3.exceptions import RetriesExceededError
 from botocore.exceptions import BotoCoreError, ClientError
 from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_from_directory, url_for
 
@@ -166,9 +168,11 @@ def print_image_route():
         return jsonify({"success": False, "message": str(exc)}), 400
 
     print_result = {"printed": False, "message": "Impressão não solicitada"}
+    queued_at = None
     try:
         if should_print:
             try:
+                queued_at = datetime.now(timezone.utc).isoformat()
                 print_result = printing.print_image(temp_path)
             except printing.PrintError as exc:
                 log_event("ERROR", "imprimir_imagem_falhou", data={"file": temp_path.name, "error": str(exc)})
@@ -177,7 +181,8 @@ def print_image_route():
                 print_result = {"printed": False, "message": str(exc)}
 
         filename = storage.build_unique_filename(temp_path.suffix)
-        s3_storage.upload_file(temp_path, s3_storage.back_cover_key(filename))
+        photo_key = s3_storage.back_cover_key(filename)
+        s3_storage.upload_file(temp_path, photo_key)
     finally:
         temp_path.unlink(missing_ok=True)
 
@@ -199,6 +204,10 @@ def print_image_route():
         "success": True,
         "message": message,
         "page_url": f"{base_url}/view/{filename}",
+        "filename": filename,
+        "photo_key": photo_key,
+        "printed": bool(print_result["printed"]),
+        "queued_at": queued_at if print_result["printed"] else None,
     })
 
 
@@ -272,8 +281,9 @@ def print_stored_photo():
         with tempfile.TemporaryDirectory(prefix="nubanca-print-") as directory:
             local_path = Path(directory) / f"photo{Path(key).suffix.lower()}"
             s3_storage.download_file(local_path, key)
+            queued_at = datetime.now(timezone.utc).isoformat()
             result = printing.print_image(local_path)
-    except (BotoCoreError, ClientError, printing.PrintError, OSError) as exc:
+    except (BotoCoreError, ClientError, RetriesExceededError, printing.PrintError, OSError) as exc:
         missing = isinstance(exc, ClientError) and exc.response.get("Error", {}).get("Code") in ("404", "NoSuchKey")
         status = 404 if missing else 502
         message = "Foto não encontrada" if missing else "Não foi possível imprimir a foto. Verifique o S3 e a impressora."
@@ -284,7 +294,13 @@ def print_stored_photo():
         return jsonify({"success": False, **result}), 409
     log_event("INFO", "reimprimir_imagem_sucesso", data={"file": key}, status=200)
     log_event_v3(f"INFO: reimprimir_imagem_sucesso | \"file\": {key}", True)
-    return jsonify({"success": True, **result})
+    return jsonify({
+        "success": True,
+        **result,
+        "filename": Path(key).name,
+        "photo_key": key,
+        "queued_at": queued_at,
+    })
 
 
 @bp.get("/view/<filename>")

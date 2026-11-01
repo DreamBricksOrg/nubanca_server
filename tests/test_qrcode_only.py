@@ -12,7 +12,7 @@ def test_editor_has_qrcode_only_button_below_save(client):
     html = response.get_data(as_text=True)
     assert 'id="qrcodeOnly"' in html
     assert html.index('id="saveImage"') < html.index('id="qrcodeOnly"')
-    assert '>apenas qrcode</button>' in html
+    assert '>Apenas Digital</button>' in html
 
 
 def test_qrcode_only_saves_image_and_logs_without_printing(client, app, monkeypatch, caplog):

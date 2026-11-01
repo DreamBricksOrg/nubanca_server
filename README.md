@@ -149,6 +149,16 @@ Galeria HTML com todas as fotos (`.jpg`, `.jpeg`, `.png`) do bucket `AWS_S3_BUCK
 
 Cada foto tem um botão **Imprimir** abaixo dela. Durante o envio, o botão fica desabilitado para evitar cliques duplicados; o resultado aparece no próprio cartão, sem sair da galeria.
 
+No editor, os botões são **Imprimir** e **Apenas Digital** (cor secundária). Apenas envios aceitos pela impressora entram no histórico; salvar somente a versão digital, desabilitar a impressão ou receber um erro não marca a foto como impressa.
+
+O histórico é local e persistente no **IndexedDB**, compartilhado entre `/editor` e `/photos` na mesma origem/navegador, e separado por bucket, local do evento e impressora. As operações são assíncronas; são guardados somente nomes/chaves e metadados, nunca as imagens. Uma transação atualiza o histórico e a previsão da fila em conjunto, inclusive entre abas. Reimpressões contam como novos envios, sem duplicar a entrada da foto. `/photos` restaura o contorno verde ao carregar e ao recuperar o foco. O verde significa **envio aceito**, não confirmação de saída do papel.
+
+O botão **Estimar horário** usa uma média de **3min30s por envio**: o horário previsto é o maior entre a entrada na fila e o término estimado anterior, mais 3min30s. Para uma foto já enviada, mostra a previsão do último envio; para uma não enviada, simula o próximo lugar na fila, sem imprimir. A data no nome do arquivo aparece apenas como referência (horário do servidor): uma reimpressão entra na fila agora, mesmo que o arquivo seja antigo. A previsão vencida pede confirmação na impressora e não declara conclusão física.
+
+O histórico não consulta o spooler e não inclui impressões anteriores à funcionalidade, nem envios de outros navegadores/dispositivos/origens. Limpar os dados do site (ou usar uma janela privada) pode remover o histórico. Se o armazenamento estiver bloqueado/cheio, a interface avisa, mas não repete uma impressão já aceita. A capacidade do IndexedDB depende do navegador e do espaço disponível. Se o `localStorage` do link do QR Code estiver cheio/bloqueado, o editor passa esse link no fragmento da URL e continua para o QR Code sem reenviar a impressão.
+
+Para executar os testes JavaScript do histórico e da interface: `npm ci` e `npm test` (Node.js 20+). `fake-indexeddb` é uma dependência apenas de testes; o navegador usa seu IndexedDB nativo, sem bibliotecas adicionais.
+
 As credenciais configuradas precisam de `s3:ListBucket` no bucket (para o prefixo configurado) e `s3:GetObject` nas fotos. Uma pasta vazia mostra uma mensagem; falhas de acesso ao S3 retornam uma página de erro com status `502`.
 
 ### `POST /photos/print`

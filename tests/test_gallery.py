@@ -1,6 +1,7 @@
 import logging
 import re
 import subprocess
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import boto3
@@ -80,11 +81,16 @@ def test_print_stored_photo_downloads_original_and_uses_configured_printer(clien
     response = client.post("/photos/print", json={"key": key})
 
     assert response.status_code == 200
-    assert response.get_json() == {
+    body = response.get_json()
+    assert body == {
         "success": True,
         "printed": True,
         "message": "Imagem enviada para impressão",
+        "filename": "photo with spaces.png",
+        "photo_key": key,
+        "queued_at": body["queued_at"],
     }
+    assert datetime.fromisoformat(body["queued_at"]).utcoffset() == timedelta(0)
     assert len(calls) == 1
     args, local_path = calls[0]
     assert args[:3] == ["test-sumatra.exe", "-print-to", "Test printer"]

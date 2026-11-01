@@ -234,8 +234,21 @@ async function saveImage(shouldPrint = true) {
 
     const dados = await resp.json();
 
-    localStorage.setItem("qrcodeImagePath", dados.page_url);
-    window.location.href = BASE_URL + "/qrcode";
+    if (shouldPrint && dados.success && dados.printed) {
+      try {
+        await window.PrintHistory.record(document.body.dataset.printScope, dados.photo_key, dados.queued_at);
+      } catch (error) {
+        window.alert("Foto enviada à impressora, mas não foi possível salvar o histórico local. Não é necessário imprimir novamente.");
+      }
+    }
+    let destination = BASE_URL + "/qrcode";
+    try {
+      localStorage.setItem("qrcodeImagePath", dados.page_url);
+    } catch (error) {
+      // Preserve the QR link without turning an accepted print into a retry.
+      destination += "#image=" + encodeURIComponent(dados.page_url);
+    }
+    window.location.href = destination;
   } catch (error) {
     console.error("Erro ao salvar a imagem:", error);
     isSaving = false;
@@ -273,11 +286,11 @@ window.addEventListener("resize", () => {
 window.addEventListener("mouseup", stopMoving);
 
 saveImage_btn.addEventListener("click", () => {
-  saveImage();
+  return saveImage();
 });
 
 qrcodeOnly_btn.addEventListener("click", () => {
-  saveImage(false);
+  return saveImage(false);
 });
 
 

@@ -1,6 +1,7 @@
 let qr = document.getElementById("qrcode");
 let back_button = document.getElementById("back_button");
-let linkImage = localStorage.getItem("qrcodeImagePath");
+let linkImage = new URLSearchParams(window.location.hash.slice(1)).get("image") ||
+  localStorage.getItem("qrcodeImagePath");
 
 var qrcode = new QRCode(qr, {
   text: linkImage,
