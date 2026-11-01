@@ -49,4 +49,5 @@ def test_changed_assets_bypass_old_service_worker_cache_entries(client):
     ]:
         html = client.get(route).get_data(as_text=True)
         for asset in assets:
-            assert f"/static/{asset}?v=print-history-1" in html
+            version = "editor-wait-1" if asset == "js/editor.js" else "print-history-1"
+            assert f"/static/{asset}?v={version}" in html

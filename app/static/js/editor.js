@@ -5,6 +5,33 @@ const saveImage_btn = document.getElementById("saveImage");
 const qrcodeOnly_btn = document.getElementById("qrcodeOnly");
 let isSaving = false;
 const moveSpeed = 5;
+let estimateVersion = 0;
+
+async function updatePrintEstimate() {
+  if (isSaving) return;
+  const version = ++estimateVersion;
+  try {
+    // The new collage has no stored key yet: estimate the next queue slot.
+    const estimate = await window.PrintHistory.estimate(document.body.dataset.printScope, "", Date.now());
+    if (isSaving || version !== estimateVersion) return;
+    if (!Number.isFinite(estimate.remainingMs) || estimate.remainingMs < 0) {
+      throw new Error("Estimativa inválida");
+    }
+    const minutes = Math.max(1, Math.ceil(estimate.remainingMs / 60000));
+    saveImage_btn.textContent = `Imprimir - ${minutes} min`;
+    saveImage_btn.title = "Tempo estimado até a foto ficar pronta, incluindo a fila registrada neste navegador e a impressão desta foto.";
+  } catch (error) {
+    if (isSaving || version !== estimateVersion) return;
+    saveImage_btn.textContent = "Imprimir";
+    saveImage_btn.title = "Estimativa indisponível: não foi possível consultar a fila local.";
+  }
+}
+
+updatePrintEstimate();
+window.addEventListener("focus", updatePrintEstimate);
+setInterval(() => {
+  if (!document.hidden) return updatePrintEstimate();
+}, 30000);
 
 const ctx1 = canvas1.getContext("2d");
 const ctx2 = canvas2.getContext("2d");

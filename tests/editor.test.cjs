@@ -8,7 +8,7 @@ const { loadHistory } = require("./helpers/print_history.cjs");
 function createEditorHarness(response = { ok: true, json: async () => ({
   success: true, printed: true, photo_key: "back-covers/sp/edited.png",
   queued_at: "2026-10-31T12:00:00Z", page_url: "https://photos.test/view/edited.png",
-}) }, history = loadHistory(), storage = null) {
+}) }, history = loadHistory(), storage = null, now = Date.now()) {
   const context2d = {
     save() {}, restore() {}, translate() {}, drawImage() {}, clearRect() {},
   };
@@ -17,6 +17,7 @@ function createEditorHarness(response = { ok: true, json: async () => ({
   for (const id of ["canvas1", "canvas2", "saveImage", "qrcodeOnly", "loading", "editor"]) {
     elements.set(id, {
       style: {}, disabled: false, width: 200, height: 300, listeners: {},
+      textContent: id === "saveImage" ? "Imprimir" : id === "qrcodeOnly" ? "Apenas Digital" : "",
       getContext: () => context2d,
       addEventListener(event, callback) {
         this.listeners[event] = (...args) => {
@@ -32,12 +33,20 @@ function createEditorHarness(response = { ok: true, json: async () => ({
   const stored = new Map();
   const errors = [];
   const alerts = [];
+  const events = {};
+  const intervals = [];
+  const clock = { now };
   let blobCallback;
   let blobCount = 0;
-  const window = { location: { href: "/editor" }, addEventListener() {}, PrintHistory: history, alert: (message) => alerts.push(message) };
+  const window = {
+    location: { href: "/editor" },
+    addEventListener: (name, callback) => { events[name] = callback; },
+    PrintHistory: history, alert: (message) => alerts.push(message),
+  };
   const sandbox = {
     document: {
       body: { dataset: { printScope: "scope-sp" } },
+      hidden: false,
       getElementById: (id) => elements.get(id),
       createElement: () => ({
         getContext: () => context2d,
@@ -53,14 +62,17 @@ function createEditorHarness(response = { ok: true, json: async () => ({
     FormData, Blob,
     fetch: async (url, options) => { requests.push({ url, ...options }); return response; },
     console: { error: (...args) => errors.push(args), log() {} },
-    setInterval, clearInterval,
+    Date: class extends Date { static now() { return clock.now; } },
+    setInterval: (callback, delay) => { intervals.push({ callback, delay }); return intervals.length; },
+    clearInterval() {},
   };
   vm.runInNewContext(
     fs.readFileSync(path.join(__dirname, "../app/static/js/editor.js"), "utf8"),
     sandbox,
   );
   return {
-    elements, requests, stored, window, errors, alerts, history,
+    elements, requests, stored, window, errors, alerts, history, events, intervals, clock,
+    document: sandbox.document,
     get blobCount() { return blobCount; },
     async finishBlob(blob = new Blob(["image"], { type: "image/png" })) {
       await blobCallback(blob);
@@ -182,4 +194,102 @@ test("full localStorage cannot strand an accepted print on the editor or lose it
   const destination = new URL(harness.window.location.href);
   assert.equal(destination.pathname, "/qrcode");
   assert.equal(new URLSearchParams(destination.hash.slice(1)).get("image"), "https://photos.test/view/edited.png");
+});
+
+test("editor print button shows total wait including the new photo", async () => {
+  const harness = createEditorHarness();
+  assert.equal(typeof harness.events.focus, "function");
+  await harness.events.focus();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 4 min");
+  assert.equal(harness.elements.get("qrcodeOnly").textContent, "Apenas Digital");
+  assert.equal((await harness.history.list("scope-sp")).length, 0);
+  assert.equal(harness.requests.length, 0);
+});
+
+test("editor shows 45 minutes for the current queue and refreshes as time passes", async () => {
+  const start = Date.parse("2026-11-01T12:00:00Z");
+  const history = loadHistory();
+  for (let i = 0; i < 12; i++) {
+    await history.record("scope-sp", `queued-${i}.png`, new Date(start).toISOString());
+  }
+  const harness = createEditorHarness(undefined, history, null, start + 30000);
+  assert.equal(typeof harness.events.focus, "function");
+  await harness.events.focus();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 45 min");
+  assert.match(harness.elements.get("saveImage").title, /estimad/i);
+  assert.equal(harness.intervals.length, 1);
+  assert.equal(harness.intervals[0].delay, 30000);
+  harness.clock.now += 60000;
+  await harness.intervals[0].callback();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 44 min");
+  assert.equal((await history.list("scope-sp")).length, 12);
+  assert.equal(harness.requests.length, 0);
+});
+
+test("editor estimates automatically on load with the current printer scope", async () => {
+  const calls = [];
+  const harness = createEditorHarness(undefined, {
+    estimate: async (...args) => { calls.push(args); return { remainingMs: 210000 }; },
+  }, null, 123456789);
+  await new Promise(setImmediate);
+  assert.deepEqual(calls, [["scope-sp", "", 123456789]]);
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 4 min");
+  assert.equal(harness.elements.get("saveImage").disabled, false);
+});
+
+test("focus includes jobs recorded on another page and hidden timer skips reads", async () => {
+  const start = Date.parse("2026-11-01T12:00:00Z");
+  const history = loadHistory();
+  let reads = 0;
+  const harness = createEditorHarness(undefined, {
+    ...history, estimate: (...args) => { reads += 1; return history.estimate(...args); },
+  }, null, start);
+  await harness.events.focus();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 4 min");
+  await history.record("scope-sp", "from-gallery.png", new Date(start).toISOString());
+  await harness.events.focus();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 7 min");
+  const before = reads;
+  harness.document.hidden = true;
+  await harness.intervals[0].callback();
+  assert.equal(reads, before);
+});
+
+test("unavailable history does not invent a wait or block printing", async () => {
+  const history = loadHistory();
+  const harness = createEditorHarness(undefined, {
+    ...history, estimate: async () => { throw new Error("Unavailable"); },
+  });
+  await harness.events.focus();
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir");
+  assert.match(harness.elements.get("saveImage").title, /indisponível/);
+  assert.equal(harness.elements.get("saveImage").disabled, false);
+  harness.elements.get("saveImage").listeners.click();
+  await harness.finishBlob();
+  assert.equal(harness.requests.length, 1);
+  assert.equal(harness.window.location.href, "https://kiosk.test/qrcode");
+});
+
+test("late estimates cannot overwrite a newer label or an active submission", async () => {
+  const pending = [];
+  const history = loadHistory();
+  const harness = createEditorHarness(undefined, {
+    ...history, estimate: () => new Promise((resolve) => pending.push(resolve)),
+  });
+  const newer = harness.events.focus();
+  pending[1]({ remainingMs: 45 * 60000 });
+  await newer;
+  pending[0]({ remainingMs: 60000 });
+  await new Promise(setImmediate);
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 45 min");
+  const beforeSaving = harness.events.focus();
+  harness.elements.get("saveImage").listeners.click();
+  pending[2]({ remainingMs: 60000 });
+  await beforeSaving;
+  await harness.intervals[0].callback();
+  assert.equal(pending.length, 3);
+  assert.equal(harness.elements.get("saveImage").textContent, "Imprimir - 45 min");
+  assert.equal(harness.elements.get("saveImage").disabled, true);
+  await harness.finishBlob();
+  assert.equal(harness.requests.length, 1);
 });
