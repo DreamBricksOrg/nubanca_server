@@ -3,6 +3,9 @@ from pathlib import Path
 
 
 class Config:
+    LOGCENTER_MONGOURL = os.environ.get("LOGCENTER_MONGOURL", "")
+    LOGCENTER_MONGO_DB = os.environ.get("LOGCENTER_MONGO_DB", "logcenter_prod")
+    LOGCENTER_MONGO_COLLECTION = os.environ.get("LOGCENTER_MONGO_COLLECTION", "logs")
     STORAGE_ROOT = Path(os.environ.get("STORAGE_ROOT", "storage")).resolve()
     HOST = os.environ.get("HOST", "0.0.0.0")
     PORT = int(os.environ.get("PORT", "5000"))

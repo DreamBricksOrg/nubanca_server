@@ -3,6 +3,7 @@ node_modules/
 __pycache__/
 *.pyc
 .env
+dist/report/
 *.egg-info/
 ngrok.log
 .logcenter/

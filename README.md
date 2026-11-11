@@ -98,7 +98,92 @@ Com o servidor rodando, a documentação interativa dos endpoints está disponí
 
 ## Endpoints
 
-Todas as respostas são JSON, exceto `GET /files/<folder>/<filename>`, que retorna o arquivo de imagem bruto.
+### `GET /relatorio`
+
+Painel operacional com totais e contagem diária separados: **Geradas para impressão**
+(`imprimir_imagem_sucesso`), **Apenas QR Code** (`apenas_qrcode_gerado`),
+**Capas geradas** (soma das duas anteriores) e **Reimpressões**
+(`reimprimir_imagem_sucesso`, sem nova capa no S3). Visualizações, compartilhamentos e
+downloads continuam em indicadores próprios. O detalhamento diário também mostra quantas fotos
+geradas no editor para impressão e quantas geradas somente para QR Code tiveram a própria
+página `/view/<filename>` acessada entre 0 e 60 segundos após a geração. O vínculo é feito
+por `data.file` no evento de geração e `data.filename` na visualização, considerando apenas
+o mesmo projeto e local. Cada foto conta uma vez, no dia da geração em Brasília (GMT-3), inclusive se o
+acesso ocorrer após a meia-noite. Reimpressões não entram nessas duas colunas nem no total de
+capas geradas. Isto é um indicador de abertura do link da foto, **não** uma prova
+de quem leu o QR Code: os eventos de geração não identificam a pessoa.
+
+Os gráficos mostram capas geradas para impressão e apenas QR Code empilhadas: **Movimento por
+horário** agrupa o intervalo de 10:00 a 23:59 em Brasília, destaca a hora de maior movimento
+e informa quantas capas foram geradas fora desse intervalo; **Capas por dia** compara os dias
+selecionados, inclusive dias sem eventos. Reimpressões, visualizações e outras interações não
+entram nos gráficos de capas. Cartões e tabela diária incluem todas as horas.
+
+Lê a coleção `logs` do LogCenter, filtrando por
+`LOGCENTER_PROJECT_ID` e pelo local escolhido (SP ou RJ); usa os campos `message` e `timestamp`
+(ISO UTC ou BSON datetime). Não confirma papel impresso nem compartilhamento concluído.
+Filtre com `inicio` e `fim` no formato `AAAA-MM-DD` (datas de Brasília inclusivas, até 31 dias;
+padrão: últimos sete dias). O filtro `event_location=sp` ou `event_location=rj` começa no
+`EVENT_LOCATION` configurado quando for SP/RJ, ou em SP caso contrário; outros valores retornam `400`.
+
+Configure no `.env` da aplicação:
+
+```
+LOGCENTER_MONGOURL=mongodb://usuario:senha@host:27017
+LOGCENTER_MONGO_DB=logcenter_prod
+LOGCENTER_MONGO_COLLECTION=logs
+# LOGCENTER_PROJECT_ID e EVENT_LOCATION já configurados para o envio de logs
+```
+
+`LOGCENTER_MONGO_DB` pode ficar vazio se a URL incluir o nome do banco. Os padrões acima
+correspondem à estrutura do LogCenter consultada. Use um usuário MongoDB com permissão
+**somente de leitura**. A página **não exige autenticação**, conforme o fluxo desta aplicação:
+restrinja o acesso à rota na rede ou no proxy antes de expor o servidor publicamente.
+O card "Arquivos removidos" compara fotos geradas no período com as chaves atuais no S3;
+o servidor também precisa de `AWS_S3_BUCKET` e permissão de listar o prefixo selecionado.
+Se algum log de geração não informar o arquivo, o card mostra `—`, não um zero parcial.
+Sem Mongo ou projeto configurado, ou se a consulta falhar, retorna `503` em vez de apresentar
+zeros como se fossem dados reais. A resposta usa `Cache-Control: no-store` e não expõe
+IPs nem nomes dos arquivos.
+
+#### Versão estática para CloudFront
+
+O endpoint Flask acima consulta o MongoDB quando acessado. Para servir o relatório sem Flask
+e sem consultas ao MongoDB por visitante, gere um snapshot local com:
+
+```bash
+venv/Scripts/python scripts/export_report.py
+```
+
+O comando usa `LOGCENTER_MONGOURL` e `LOGCENTER_PROJECT_ID` do `.env` **somente durante a
+exportação**. Ele cria `dist/report/index.html`, `logs.jsonl` e os assets necessários (CSS,
+JavaScript, fonte e logo). Publique **apenas o conteúdo de `dist/report/`** em um bucket de
+origem do CloudFront, mantendo todos os arquivos no mesmo prefixo, e configure `index.html`
+como objeto raiz padrão. Não publique `.env`, o código do servidor ou outros diretórios.
+O navegador baixa `logs.jsonl` da mesma origem e aplica os filtros e gráficos localmente;
+não há conexão ao MongoDB nem API Flask no carregamento da página estática.
+
+O JSONL contém um evento por linha com apenas horário UTC, tipo de evento, local (SP/RJ) e
+um identificador aleatório derivado da foto para correlacionar geração e visualização, além
+de um indicador de presença no S3 para as fotos geradas. O card "Arquivos removidos" conta
+fotos distintas com evento de geração no período selecionado que não tinham objeto no S3
+no momento da exportação; não é uma prova de quando ou por que o arquivo sumiu. A exportação
+exige `AWS_S3_BUCKET` e permissão de listar `back-covers/sp/` e `back-covers/rj/`. IP,
+user-agent, nomes de arquivos, chaves S3, credenciais e IDs do projeto não são exportados.
+O identificador da foto é pseudônimo com chave aleatória nova a cada exportação; cada snapshot
+é independente. Mesmo minimizados, horários/eventos podem ser sensíveis: restrinja o acesso
+ao CloudFront conforme necessário. `dist/report/` é ignorado pelo Git.
+
+Para atualizar os dados, execute novamente o comando e publique os arquivos atualizados,
+incluindo `index.html` e `js/report.js` ao instalar esta versão do relatório. Invalide
+`/logs.jsonl`, `/index.html`, `/js/report.js` e `/` no CloudFront ou configure cache curto
+para esses objetos;
+do contrário o dashboard poderá mostrar um snapshot antigo. A data do filtro usa GMT-3,
+com limite de 31 dias e o gráfico horário de 10:00 a 23:59. A página estática deve ser
+servida via HTTP(S), não aberta como `file://` (o `fetch` do JSONL é bloqueado nesse modo).
+
+As rotas de API retornam JSON; `/relatorio`, `/photos` e `/view/<filename>` retornam HTML,
+`/files/<folder>/<filename>` retorna a imagem e o download redireciona para o S3.
 
 ### `GET /image`
 

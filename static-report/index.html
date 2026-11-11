@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Relatório de interações | Nubanca</title>
+    <link rel="stylesheet" href="css/reports.css" />
+    <script src="js/report.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar"><div class="shell topbar-inner">
+      <span class="brand"><span class="brand-mark"><img src="img/logo-white.png" alt="" /></span> Nubanca <span class="brand-divider">/</span> Relatórios</span>
+    </div></header>
+    <main class="shell">
+      <div class="intro"><div><span class="eyebrow">LOGCENTER / EVENTOS</span>
+        <h1>Relatório de interações</h1>
+        <p>Snapshot dos eventos. Período e agrupamento no horário de Brasília (GMT-3).</p>
+      </div><span id="date-pill" class="date-pill"></span></div>
+      <form id="filters" class="filters">
+        <div class="field"><label for="inicio">Data inicial</label><input id="inicio" name="inicio" type="date" required /></div>
+        <div class="field"><label for="fim">Data final</label><input id="fim" name="fim" type="date" required /></div>
+        <div class="field"><label for="event_location">Local do evento</label><select id="event_location" name="event_location"><option value="sp">SP</option><option value="rj">RJ</option></select></div>
+        <button type="submit">Atualizar período <span aria-hidden="true">↗</span></button>
+        <span class="filter-hint">Até 31 dias por consulta</span>
+      </form>
+      <p id="report-error" role="alert">Carregando snapshot...</p>
+      <section aria-labelledby="summary-title" class="summary"><div class="section-head"><h2 id="summary-title">Visão geral</h2><span>Contagem de eventos</span></div><div id="cards" class="cards"></div></section>
+      <section aria-labelledby="hourly-title" class="daily chart-panel">
+        <div class="section-head"><div><h2 id="hourly-title">Movimento por horário</h2><p>Capas geradas por hora, das 10:00 às 23:00 em Brasília (GMT-3).</p></div><span id="hourly-peak" class="chart-badge"></span></div>
+        <div class="chart-legend"><span><i class="legend-printed" aria-hidden="true"></i> Para impressão</span><span><i class="legend-digital" aria-hidden="true"></i> Apenas QR Code</span></div>
+        <div class="chart-scroll"><div id="hourly-bars" class="bar-chart hourly-chart"></div></div>
+        <p id="outside-hours" class="chart-caption"></p>
+      </section>
+      <section aria-labelledby="daily-chart-title" class="daily chart-panel">
+        <div class="section-head"><div><h2 id="daily-chart-title">Capas por dia</h2><p>Comparação de fotos geradas para impressão e apenas QR Code no período selecionado.</p></div><span id="daily-peak" class="chart-badge"></span></div>
+        <div class="chart-legend"><span><i class="legend-printed" aria-hidden="true"></i> Para impressão</span><span><i class="legend-digital" aria-hidden="true"></i> Apenas QR Code</span></div>
+        <div class="chart-scroll"><div id="daily-bars" class="bar-chart daily-chart"></div></div>
+      </section>
+      <section aria-labelledby="daily-title" class="daily"><div class="section-head"><div><h2 id="daily-title">Detalhamento diário</h2><p>Uma linha por dia, incluindo dias sem eventos. Acessos são atribuídos ao dia em que a foto foi gerada.</p></div><span>Brasília · GMT-3</span></div>
+        <div class="table-wrap"><table><thead><tr><th scope="col">Data</th><th scope="col">Capas geradas</th><th scope="col">Geradas para impressão</th><th scope="col">Apenas QR Code</th><th scope="col">Reimpressões</th><th scope="col">Visualizações</th><th scope="col">Compartilhamentos</th><th scope="col">Downloads</th><th scope="col">Usuários que solicitaram versão impressa e escanearam o qrcode</th><th scope="col">Usuários que solicitaram versão digital e escanearam o qrcode</th></tr></thead><tbody id="daily-rows"></tbody></table></div>
+      </section>
+    </main>
+  </body>
+</html>

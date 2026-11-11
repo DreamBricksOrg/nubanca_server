@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Relatório de interações | Nubanca</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css', v='charts-1') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <span class="brand"><span class="brand-mark"><img src="{{ url_for('static', filename='img/logo-white.png') }}" alt="" /></span> Nubanca <span class="brand-divider">/</span> Relatórios</span>
+      </div>
+    </header>
+    <main class="shell">
+      <div class="intro">
+        <div>
+          <span class="eyebrow">LOGCENTER / EVENTOS</span>
+          <h1>Relatório de interações</h1>
+          <p>Eventos registrados no fluxo de fotos. Período e agrupamento no horário de Brasília (GMT-3).</p>
+        </div>
+        <span class="date-pill">{{ location|upper }} · {{ start }} <span aria-hidden="true">→</span> {{ end }}</span>
+      </div>
+
+      <form class="filters" method="get" action="{{ url_for('reports.report_page') }}">
+        <div class="field"><label for="inicio">Data inicial</label><input id="inicio" name="inicio" type="date" value="{{ start }}" required /></div>
+        <div class="field"><label for="fim">Data final</label><input id="fim" name="fim" type="date" value="{{ end }}" required /></div>
+        <div class="field"><label for="event_location">Local do evento</label><select id="event_location" name="event_location"><option value="sp"{% if location == 'sp' %} selected{% endif %}>SP</option><option value="rj"{% if location == 'rj' %} selected{% endif %}>RJ</option></select></div>
+        <button type="submit">Atualizar período <span aria-hidden="true">↗</span></button>
+        <span class="filter-hint">Até 31 dias por consulta</span>
+      </form>
+
+      <section aria-labelledby="summary-title" class="summary">
+        <div class="section-head"><h2 id="summary-title">Visão geral</h2><span>Contagem de eventos</span></div>
+        <div class="cards">
+          <article class="card card-1" data-metric="generated" data-count="{{ generated_total }}">
+            <span class="card-icon" aria-hidden="true">▣</span>
+            <span class="card-label">Capas geradas</span>
+            <strong>{{ '{:,}'.format(generated_total).replace(',', '.') }}</strong>
+            <span class="card-foot">para impressão + apenas QR Code</span>
+          </article>
+          {% for event_id, label in events %}
+          <article class="card card-{{ loop.index + 1 }}" data-event="{{ event_id }}" data-count="{{ totals[event_id] }}">
+            <span class="card-icon" aria-hidden="true">{{ ['↗', '▦', '⟳', '◉', '⇪', '↓'][loop.index0] }}</span>
+            <span class="card-label">{{ label }}</span>
+            <strong>{{ '{:,}'.format(totals[event_id]).replace(',', '.') }}</strong>
+            <span class="card-foot">no período selecionado</span>
+          </article>
+          {% endfor %}
+          <article class="card card-8" data-metric="removed"{% if removed_count is not none %} data-count="{{ removed_count }}"{% endif %}>
+            <span class="card-icon" aria-hidden="true">✕</span>
+            <span class="card-label">Arquivos removidos</span>
+            <strong>{{ removed_count if removed_count is not none else '—' }}</strong>
+            <span class="card-foot">{{ 'removidos do S3 por pedido do usuario' if removed_count is not none else 'sem nome de arquivo em alguns registros' }}</span>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="hourly-title" class="daily chart-panel">
+        <div class="section-head"><div><h2 id="hourly-title">Movimento por horário</h2><p>Capas geradas por hora, das 10:00 às 23:00 em Brasília (GMT-3).</p></div>{% if busiest %}<span class="chart-badge">Pico: {{ '{:02d}:00'.format(busiest.hour) }} · {{ busiest.total }} capas</span>{% endif %}</div>
+        <div class="chart-legend"><span><i class="legend-printed" aria-hidden="true"></i> Para impressão</span><span><i class="legend-digital" aria-hidden="true"></i> Apenas QR Code</span></div>
+        <div class="chart-scroll"><div class="bar-chart hourly-chart">
+          {% for hour in hourly %}
+          <div class="bar-chart-item" data-hour="{{ hour.hour }}" data-printed="{{ hour.printed }}" data-digital="{{ hour.digital }}" data-count="{{ hour.total }}" role="group" aria-label="{{ '{:02d}:00'.format(hour.hour) }}: {{ hour.printed }} para impressão, {{ hour.digital }} apenas QR Code">
+            <span class="bar-total">{{ hour.total }}</span>
+            <div class="bar-track" aria-hidden="true"><span class="bar-segment bar-printed" style="height: {{ hour.printed_percent }}%"></span><span class="bar-segment bar-digital" style="height: {{ hour.digital_percent }}%"></span></div>
+            <span class="bar-label">{{ '{:02d}'.format(hour.hour) }}h</span>
+          </div>
+          {% endfor %}
+        </div></div>
+        <p class="chart-caption">Fora do intervalo exibido: {{ outside_hours }}</p>
+      </section>
+
+      <section aria-labelledby="daily-chart-title" class="daily chart-panel">
+        <div class="section-head"><div><h2 id="daily-chart-title">Capas por dia</h2><p>Comparação de fotos geradas para impressão e apenas QR Code no período selecionado.</p></div>{% if busiest_day %}<span class="chart-badge">Dia mais movimentado: {{ busiest_day.label }} · {{ busiest_day.total }} capas</span>{% endif %}</div>
+        <div class="chart-legend"><span><i class="legend-printed" aria-hidden="true"></i> Para impressão</span><span><i class="legend-digital" aria-hidden="true"></i> Apenas QR Code</span></div>
+        <div class="chart-scroll"><div class="bar-chart daily-chart" style="min-width: {{ daily_chart_width }}px; --day-columns: {{ daily_chart|length }}">
+          {% for day in daily_chart %}
+          <div class="bar-chart-item" data-day="{{ day.date }}" data-printed="{{ day.printed }}" data-digital="{{ day.digital }}" data-count="{{ day.total }}" role="group" aria-label="{{ day.date }}: {{ day.printed }} para impressão, {{ day.digital }} apenas QR Code">
+            <span class="bar-total">{{ day.total }}</span>
+            <div class="bar-track" aria-hidden="true"><span class="bar-segment bar-printed" style="height: {{ day.printed_percent }}%"></span><span class="bar-segment bar-digital" style="height: {{ day.digital_percent }}%"></span></div>
+            <span class="bar-label">{{ day.label }}</span>
+          </div>
+          {% endfor %}
+        </div></div>
+      </section>
+
+      <section aria-labelledby="daily-title" class="daily">
+        <div class="section-head"><div><h2 id="daily-title">Detalhamento diário</h2></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th scope="col">Data</th><th scope="col">Capas geradas</th>{% for event_id, label in events %}<th scope="col">{{ label }}</th>{% endfor %}<th scope="col">Usuários que solicitaram versão impressa e escanearam o qrcode</th><th scope="col">Usuários que solicitaram versão digital e escanearam o qrcode</th></tr></thead>
+            <tbody>
+              {% for day in days|reverse %}
+              <tr><th scope="row">{{ day.date }}</th><td data-metric="generated" data-count="{{ day.generated }}">{{ day.generated }}</td>{% for event_id, label in events %}<td>{{ '{:,}'.format(day.counts[event_id]).replace(',', '.') }}</td>{% endfor %}<td data-metric="printed-opened" data-count="{{ day.printed_opened }}">{{ day.printed_opened }}</td><td data-metric="digital-opened" data-count="{{ day.digital_opened }}">{{ day.digital_opened }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

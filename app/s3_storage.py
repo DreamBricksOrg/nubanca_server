@@ -64,6 +64,13 @@ def list_back_covers() -> list[dict]:
     ]
 
 
+def list_back_cover_keys(location: str) -> set[str]:
+    """List every stored cover for the selected report location."""
+    prefix = f"back-covers/{location}/"
+    pages = _client().get_paginator("list_objects_v2").paginate(Bucket=_bucket(), Prefix=prefix)
+    return {obj["Key"] for page in pages for obj in page.get("Contents", [])}
+
+
 def object_exists(key: str) -> bool:
     try:
         _client().head_object(Bucket=_bucket(), Key=key)
